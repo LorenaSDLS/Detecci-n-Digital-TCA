@@ -1,0 +1,405 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Plantilla basada en IEEE Access (bare_jrnl.tex)
+% Actividad 1.3.a - State of the Art
+% Detección de anorexia y desórdenes alimenticios en redes sociales
+% Curso: TC3002B - Desarrollo de Aplicaciones Avanzadas de Ciencias Computacionales
+% Tecnológico de Monterrey
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\documentclass[journal]{IEEEtran}
+
+% ---- Paquetes ----
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[spanish,es-tabla]{babel}
+\usepackage{csquotes}
+\usepackage{graphicx}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{array}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{tabularx}
+\usepackage{multirow}
+\usepackage{url}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    filecolor=magenta,
+    urlcolor=blue,
+    citecolor=blue
+}
+\usepackage{cite}
+\usepackage{textcomp}
+
+% Permite saltos de línea en URLs largas
+\def\UrlBreaks{\do\/\do-\do_\do.\do?\do=}
+
+\begin{document}
+
+% ---- Encabezado del artículo ----
+\title{Estado del Arte: Detección Automática de Desórdenes Alimenticios en Redes Sociales mediante Procesamiento de Lenguaje Natural e Inteligencia Artificial}
+
+\author{
+\IEEEauthorblockN{Andrea Guadalupe Blanco Rubio, Carlos Alberto Zamudio Velázquez, Lorena Abigail Solís de los Santos}\\
+\IEEEauthorblockA{Tecnológico de Monterrey\\
+Departamento de Computación\\
+Abril 2026}
+}
+
+\markboth{Reto TC3002B -- Actividad 1.3.a -- Estado del Arte, Abril~2026}%
+{Equipo TC3002B: Detección de Desórdenes Alimenticios}
+
+\maketitle
+
+% ---- Abstract ----
+\begin{abstract}
+La detección automática de desórdenes alimenticios a partir de textos en redes sociales constituye una línea de investigación de creciente relevancia clínica y social, dado que estos trastornos presentan la tasa de mortalidad más elevada entre las enfermedades psiquiátricas. Este documento presenta una revisión sistemática de diez artículos científicos recientes (2020--2026) que abordan la detección de anorexia y desórdenes alimenticios en plataformas como Reddit y Twitter/X. Los trabajos se organizan en dos dimensiones alineadas con las fases del reto: (i) cinco aproximaciones basadas en aprendizaje automático tradicional y redes neuronales clásicas, y (ii) cinco aproximaciones basadas en transformers y modelos grandes de lenguaje (LLMs). Para cada artículo se documenta el conjunto de datos utilizado, la metodología aplicada, las características extraídas, las métricas de desempeño reportadas ---con énfasis en F1, AUC y ERDE--- así como sus fortalezas, limitaciones y pertinencia para el proyecto. Los hallazgos consolidados indican que las pipelines clásicas basadas en embeddings adaptados al dominio y representaciones emocionales alcanzan un F1 cercano a 0.84 sobre el corpus eRisk~2018, mientras que los transformers ajustados finamente (BERT, BETO, MentalBERT) superan el 85\% de exactitud. De forma notable, los LLMs utilizados en configuración zero-shot no superan a los transformers ajustados, lo que ofrece una dirección clara para el estudio comparativo que desarrollará el equipo bajo la métrica AUC.
+\end{abstract}
+
+\begin{IEEEkeywords}
+Detección de desórdenes alimenticios, anorexia nerviosa, procesamiento de lenguaje natural, redes sociales, Reddit, aprendizaje automático, transformers, BERT, LLMs, clasificación binaria, eRisk.
+\end{IEEEkeywords}
+
+% ===============================================================
+\section{Introducción}
+% ===============================================================
+
+\IEEEPARstart{L}{os} desórdenes alimenticios ---particularmente la anorexia nerviosa, la bulimia y el trastorno por atracón--- constituyen un problema de salud pública de magnitud creciente. Al mismo tiempo, plataformas como Twitter/X y Reddit se han consolidado como espacios donde las personas comparten experiencias relacionadas con su bienestar mental, generando vastos corpus textuales de alto valor clínico e investigativo \cite{montejo2024survey}. La detección precoz de estos trastornos a partir del lenguaje empleado en publicaciones digitales habilita intervenciones que pueden salvar vidas.
+
+El presente documento desarrolla el estado del arte del reto planteado en el curso TC3002B, cuyo objetivo consiste en diseñar una herramienta efectiva y eficiente para la detección binaria de desórdenes alimenticios. Siguiendo la estructura del reto ---dividido en una Fase~2 basada en técnicas clásicas de aprendizaje automático y una Fase~3 basada en modelos de vanguardia--- esta revisión selecciona \textbf{diez artículos}: cinco alineados con cada fase. Para cada trabajo se describen sus aportaciones, se caracteriza su contribución en términos de la dimensión de desempeño elegida (área bajo la curva ROC, F1-score y métricas complementarias) y se identifica su utilidad para nuestra propuesta de solución.
+
+La selección se restringió a trabajos que: (i) abordan específicamente la detección de anorexia o desórdenes alimenticios, (ii) emplean corpus de redes sociales (Reddit o Twitter), (iii) son publicaciones recientes (2020--2026) de venues arbitrados, y (iv) reportan métricas cuantitativas que permiten comparación directa.
+
+% ===============================================================
+\section{Fase 2: Aprendizaje Automático Tradicional y Aprendizaje Profundo Clásico}
+% ===============================================================
+
+Los cinco artículos de esta sección emplean técnicas alineadas con los módulos de Aprendizaje Automático y Compiladores del curso: extracción de atributos (TF-IDF, Bag-of-Words, $n$-gramas, embeddings tradicionales), análisis de sentimiento, características estilísticas, y clasificadores clásicos como Support Vector Machine (SVM), Random Forest (RF), Regresión Logística (LR) y redes convolucionales/recurrentes elementales.
+
+% -------------------------------------------
+\subsection{Aguilera, Hernández Farías, Ortega-Mendoza y Montes-y-Gómez (2021): Clasificación de una sola clase para anorexia y depresión}
+% -------------------------------------------
+
+\textbf{Referencia completa.} Aguilera, J.; Hernández Farías, D.~I.; Ortega-Mendoza, R.~M.; Montes-y-Gómez, M. (2021). \emph{Depression and Anorexia Detection in Social Media as a One-Class Classification Problem}. \textit{Applied Intelligence}, 51(8), 6088--6103. DOI: 10.1007/s10489-020-02131-2 \cite{aguilera2021oneclass}.
+
+\textbf{Aportación principal.} Los autores cuestionan la validez del planteamiento binario estándar, argumentando que la clase negativa (``usuarios sanos'') es extremadamente heterogénea y que construir un modelo representativo de ella resulta impráctico. En consecuencia, reformulan el problema como \emph{clasificación de una sola clase} (OCC) y proponen dos algoritmos instance-based novedosos: OCC-kSS (k-Strongest Strengths) y gSC (Global Strength Classifier), inspirados en la analogía gravitacional entre un documento candidato y el prototipo de la clase positiva.
+
+\textbf{Conjunto de datos.} Corpus oficial de eRisk~2018 Tarea~2 (anorexia): 152 usuarios de entrenamiento (20 positivos, 132 negativos) y 320 usuarios de prueba (41 positivos, 279 negativos), con prevalencia positiva $\approx 13\%$. Los datos provienen de subreddits relacionados con salud mental.
+
+\textbf{Metodología.} Concatenación de publicaciones por usuario; representación mediante vectores de ``fuerza'' basados en distancia coseno contra el prototipo positivo; clasificación con OCC-kSS o gSC; comparación contra One-Class SVM, variantes de k-NN, y referencias binarias (SVM, Naive Bayes, LR). Se introduce el uso de \emph{frases personales} (oraciones con pronombres en primera persona del singular) como señal discriminante.
+
+\textbf{Atributos.} Vectores TF-coseno a nivel de usuario; léxicos especializados (Cleveland Clinic y UrbanThesaurus para anorexia); no se emplean embeddings preentrenados en la variante OCC.
+
+\textbf{Desempeño.} Los autores reportan que los resultados OCC son \emph{competitivos con el estado del arte binario} en eRisk~2018 anorexia, ubicándose en el rango medio de los participantes oficiales de la tarea.
+
+\textbf{Fortalezas y limitaciones.} La formulación OCC elimina la dependencia de una clase negativa ruidosa y produce clasificadores interpretables y económicos computacionalmente. Sus limitaciones incluyen la dependencia de léxicos curados manualmente, el tamaño reducido de la clase positiva y un F1 absoluto modesto frente a ensambles CNN más recientes.
+
+\textbf{Pertinencia para el equipo.} Constituye la referencia canónica OCC sobre eRisk anorexia. Implementar OCC-kSS junto a una LR binaria estándar permite al equipo realizar una ablación valiosa: demostrar si la señal de la clase positiva basta por sí sola para obtener un buen AUC.
+
+% -------------------------------------------
+\subsection{Aragón, López-Monroy, González-Gurrola y Montes-y-Gómez (2023): Bolsa de Sub-Emociones}
+% -------------------------------------------
+
+\textbf{Referencia completa.} Aragón, M.~E.; López-Monroy, A.~P.; González-Gurrola, L.~C.; Montes-y-Gómez, M. (2023). \emph{Detecting Mental Disorders in Social Media Through Emotional Patterns --- The Case of Anorexia and Depression}. \textit{IEEE Transactions on Affective Computing}, 14(1), 211--222. DOI: 10.1109/TAFFC.2021.3075638 \cite{aragon2023bose}.
+
+\textbf{Aportación principal.} Introducen la representación \textbf{Bag of Sub-Emotions (BoSE)}: sub-embeddings de FastText entrenados sobre semillas del léxico emocional NRC EmoLex se agrupan mediante $K$-means para obtener \emph{sub-emociones} finas; cada usuario se representa entonces como un histograma sobre dichas sub-emociones. Una variante diacrónica (D-BoSE) modela la deriva temporal. La fusión tardía de ambas señales, alimentada a una regresión logística, iguala o supera a los mejores sistemas de eRisk~2018.
+
+\textbf{Conjunto de datos.} Reddit; corpus oficial eRisk~2018 Tarea~2 anorexia (mismas particiones que \cite{aguilera2021oneclass}) y eRisk~2017 depresión.
+
+\textbf{Metodología.} (i) Normalización y limpieza conservando stopwords; (ii) inicialización con EmoLex (8 emociones + 2 sentimientos); (iii) FastText sub-word + $K$-means para producir sub-emociones por categoría; (iv) sustitución de cada palabra por su sub-emoción más cercana para formar el histograma BoSE; (v) D-BoSE captura variación temporal por bloques; (vi) LR/SVM sobre cada canal y \emph{fusión tardía tipo OR} entre BoSE y D-BoSE.
+
+\textbf{Atributos.} Histogramas de algunas centenas de dimensiones (categorías EmoLex $\times$ sub-emociones); FastText 300-dim (solo para clustering); referencias con BoW unigramas/bigramas y promedios de GloVe/Word2Vec.
+
+\textbf{Desempeño (eRisk 2018 anorexia, clase positiva).}
+\begin{itemize}
+    \item BoSE individual: \textbf{F1 = 0.82}
+    \item D-BoSE individual: F1 = 0.79
+    \item Fusión temprana: F1 = 0.77
+    \item \textbf{Fusión tardía: F1 = 0.84, Precisión = 0.87, Recall = 0.80}
+\end{itemize}
+Estos resultados empatan al mejor participante oficial de eRisk~2018 (F1 = 0.85).
+
+\textbf{Fortalezas y limitaciones.} Clusters altamente interpretables; se alcanza un desempeño cercano al SOTA con un clasificador lineal; la misma arquitectura generaliza a depresión. Limitado por la calidad de EmoLex, ausencia de optimización para latencia temprana, y dependencia de un $K$ ajustado manualmente.
+
+\textbf{Pertinencia para el equipo.} \emph{La pipeline clásica individual más fuerte para replicar.} Todos los componentes son de código abierto (FastText, EmoLex, scikit-learn) y la marca F1~=~0.84 sobre eRisk~2018 constituye el objetivo clásico a vencer. Dado que la LR emite probabilidades posteriores, el cálculo de AUC sobre la misma partición es trivial.
+
+% -------------------------------------------
+\subsection{Aragón, López-Monroy, González y Montes-y-Gómez (2022): Representación multi-canal con Gated Multimodal Unit}
+% -------------------------------------------
+
+\textbf{Referencia completa.} Aragón, M.~E.; López-Monroy, A.~P.; González, L.~C.; Montes-y-Gómez, M. (2022). \emph{Approaching What and How People with Mental Disorders Communicate in Social Media --- Introducing a Multi-Channel Representation}. \textit{Neural Computing and Applications}, 34(22), 20149--20164. DOI: 10.1007/s00521-022-07569-8 \cite{aragon2022multichannel}.
+
+\textbf{Aportación principal.} Extienden BoSE con una arquitectura CNN de tres canales explícitos: contenido temático, estilo de escritura (LIWC + estilometría) y emociones (BoSE). Una \textbf{Gated Multimodal Unit (GMU)} aprende pesos de compuerta específicos por canal antes de una cabeza densa de clasificación. El modelo se evalúa sobre anorexia, depresión y auto-daño en eRisk, superando todas las referencias previas, incluidos los mejores participantes oficiales.
+
+\textbf{Conjunto de datos.} Reddit; eRisk anorexia~2018 Tarea~2, depresión~2017/2018 y auto-daño~2019.
+
+\textbf{Metodología.} El Canal~A aplica filtros CNN estilo Kim (anchos 3/4/5) sobre embeddings Word2Vec/FastText; el Canal~B alimenta conteos de categorías LIWC y características estilométricas; el Canal~C alimenta histogramas BoSE; la GMU controla los tres vectores antes de una cabeza sigmoide.
+
+\textbf{Atributos.} LIWC 2015 ($\approx$73 categorías), conteos de puntuación y mayúsculas, histogramas BoSE, embeddings FastText 300-dim.
+
+\textbf{Desempeño.} El modelo multi-canal + GMU \emph{supera tanto las referencias mono-canal como a los mejores participantes oficiales de eRisk} en F1 y métricas de ranking, a través de anorexia, depresión y auto-daño.
+
+\textbf{Fortalezas y limitaciones.} Modela explícitamente ``qué'' (contenido) frente a ``cómo'' (estilo/emoción); la misma arquitectura se transfiere entre trastornos; la GMU es interpretable. En contraparte, añade complejidad frente a BoSE a cambio de ganancias marginales sobre un conjunto de prueba pequeño; depende del diccionario LIWC licenciado y la GMU introduce miles de parámetros sobre una clase positiva reducida.
+
+\textbf{Pertinencia para el equipo.} Plantilla ideal para una \emph{referencia clásica de fusión de canales}. Una adaptación pragmática consiste en reemplazar la CNN+GMU por una concatenación TF-IDF + LIWC + BoSE alimentada a LR, preservando la idea de fusión bajo un enfoque estrictamente clásico adecuado para la Fase~2.
+
+% -------------------------------------------
+\subsection{Ramírez-Cifuentes, Largeron, Tissier, Freire y Baeza-Yates (2020): Embeddings enriquecidos para anorexia}
+% -------------------------------------------
+
+\textbf{Referencia completa.} Ramírez-Cifuentes, D.; Largeron, C.; Tissier, J.; Freire, A.; Baeza-Yates, R. (2020). \emph{Enhanced Word Embeddings for Anorexia Nervosa Detection on Social Media}. En \textit{Advances in Intelligent Data Analysis XVIII (IDA 2020)}, LNCS vol.~12080, pp.~404--417. Springer. DOI: 10.1007/978-3-030-44584-3\_32 \cite{ramirez2020enhanced}.
+
+\textbf{Aportación principal.} Extienden el algoritmo Dict2vec de modo que pares de términos predictivos del dominio (por ejemplo, ``cw''--``goal weight'') son acercados en el espacio de embeddings, mientras que pares irrelevantes son alejados. Los embeddings resultantes, promediados por usuario, alimentan clasificadores LR/RF/SVM y superan a Word2Vec, GloVe, FastText preentrenados, Dict2vec vanilla, y Word2Vec reentrenado sólo con eRisk.
+
+\textbf{Conjunto de datos.} Reddit; eRisk~2018 Tarea~2 anorexia con las particiones canónicas. Se emplea SMOTE para sobre-muestreo de la clase positiva en algunos experimentos.
+
+\textbf{Metodología.} (i) Identificación de términos predictivos mediante $\chi^2$/correlación; (ii) entrenamiento de Word2Vec skip-gram enriquecido con diccionario y pares positivos predictivos; (iii) promedio de embeddings por usuario; (iv) clasificación con LR, RF o SVM.
+
+\textbf{Atributos.} Embeddings de 100--300 dimensiones (cuatro variantes); vocabulario de anorexia rankeado por $\chi^2$ (``cw'', ``ow'', ``bmr'', ``thinspo'', términos de purga); SMOTE para balanceo.
+
+\textbf{Desempeño.} Los embeddings enriquecidos superan todas las referencias tanto en screening como en similitud semántica; el F1 de la clase positiva sobre eRisk~2018 anorexia alcanza valores altos en los 0.70 y en una variante supera \textbf{0.80}.
+
+\textbf{Fortalezas y limitaciones.} Demuestra que los \emph{embeddings adaptados al dominio importan más que clasificadores más profundos} sobre un corpus pequeño como eRisk; la reproducibilidad es alta y los embeddings están publicados. Sus limitaciones: requiere datos etiquetados para minar los términos predictivos; el promedio descarta la señal posicional; AUC no es la métrica principal.
+
+\textbf{Pertinencia para el equipo.} Proporciona una referencia ``Word2Vec justa'' sobre el mismo corpus canónico. Comparar Word2Vec vanilla + LR contra esta variante enriquecida del dominio constituye una ablación de libro de texto, cuya diferencia en AUC producirá una gráfica convincente en el reporte final.
+
+% -------------------------------------------
+\subsection{Villa-Pérez, Trejo, Moin y Stroulia (2023): Pipeline bilingüe con ingeniería de características extensiva}
+% -------------------------------------------
+
+\textbf{Referencia completa.} Villa-Pérez, M.~E.; Trejo, L.~A.; Moin, M.~B.; Stroulia, E. (2023). \emph{Extracting Mental Health Indicators from English and Spanish Social Media: A Machine Learning Approach}. \textit{IEEE Access}, 11, 128135--128152. DOI: 10.1109/ACCESS.2023.3332289 \cite{villa2023bilingual}.
+
+\textbf{Aportación principal.} Construyen un corpus bilingüe de Twitter que cubre nueve condiciones de salud mental auto-declaradas ---\textbf{incluyendo desórdenes alimenticios}--- junto con controles emparejados, y realizan un \emph{benchmarking} sistemático de cinco clasificadores clásicos y tres modelos de aprendizaje profundo elemental bajo múltiples vistas de características. Ofrecen el catálogo de atributos publicado más completo para clasificación a nivel de usuario de desórdenes alimenticios.
+
+\textbf{Conjunto de datos.} Twitter/X: $\sim$1{,}500 usuarios diagnosticados por idioma (inglés y español) a lo largo de nueve condiciones (TDAH, autismo, ansiedad, bipolar, depresión, \textbf{desórdenes alimenticios}, TOC, TEPT y esquizofrenia) más $\sim$1{,}700 controles emparejados. El corpus se publicó en IEEE DataPort (DOI: 10.21227/6pxp-4t91) y admite tareas binarias (diagnosticado vs. control) y multiclase de 9 etiquetas.
+
+\textbf{Metodología.} Expresiones regulares de auto-divulgación para identificar usuarios diagnosticados $\rightarrow$ timelines de al menos tres meses $\rightarrow$ seis vistas paralelas de características $\rightarrow$ clasificadores clásicos (LR, SVM, RF, Naive Bayes, XGBoost) y DL clásico (CNN, LSTM, BiLSTM) $\rightarrow$ evaluación por condición.
+
+\textbf{Atributos extraídos.} $n$-gramas de palabras, $q$-gramas de caracteres, distribuciones POS, distribuciones temáticas LDA, \textbf{categorías LIWC} (inglés y español), y embeddings Word2Vec / FastText. Las dimensiones exactas figuran en las Tablas~IV--VIII del artículo.
+
+\textbf{Desempeño.} Se reportan Precisión, Recall y F1 competitivos por condición tanto en las tareas binaria como multiclase. El análisis de importancia de características identifica las categorías LIWC y $n$-gramas más distintivas por condición.
+
+\textbf{Fortalezas y limitaciones.} Corpus bilingüe público con clase ED explícita; comparación exhaustiva de características que funciona además como guía metodológica; análisis de importancia clínicamente interpretable. Limitaciones: etiquetas son auto-declaradas, no clínicas; la clase ED no se divide en subtipos (AN, BN, BED); los tamaños por condición se reducen en el escenario multiclase.
+
+\textbf{Pertinencia para el equipo.} Actúa como un \emph{recetario} para el entregable de la Fase~2. El equipo puede replicar las seis vistas de características sobre los datos de Reddit (TF-IDF, $q$-gramas, POS, LDA, LIWC, embeddings) y comparar AUC de manera sistemática. La cobertura bilingüe es una ventaja adicional si se decide extender al español.
+
+% ===============================================================
+\section{Fase 3: Transformers y Modelos Grandes de Lenguaje}
+% ===============================================================
+
+Los cinco artículos de esta sección emplean técnicas de vanguardia alineadas con la Fase~3 del reto: transformers preentrenados (BERT, BETO, MentalBERT, RoBERTa, XLNet, DistilBERT), fine-tuning completo para clasificación binaria, modelos transformer de series temporales y modelos grandes de lenguaje generativos (LLaMA, Mistral, Gemma, GPT-3.5) usados mediante estrategias de prompting.
+
+% -------------------------------------------
+\subsection{López-Úbeda, Plaza-del-Arco, Díaz-Galiano y Martín-Valdivia (2021): Transfer learning con transformers mono- y multilingües}
+% -------------------------------------------
+
+\textbf{Referencia completa.} López-Úbeda, P.; Plaza-del-Arco, F.~M.; Díaz-Galiano, M.~C.; Martín-Valdivia, M.-T. (2021). \emph{How Successful Is Transfer Learning for Detecting Anorexia on Social Media?}. \textit{Applied Sciences}, 11(4), 1838. DOI: 10.3390/app11041838 \cite{lopezubeda2021transfer}.
+
+\textbf{Aportación principal.} Comparación controlada de cuatro transformers (BETO monolingüe español, mBERT, XLM y XLM-RoBERTa) contra referencias CNN/LSTM/BiLSTM y un sistema SVM/MLP previo para detección de anorexia en tweets en español. \textbf{BETO monolingüe} vence decisivamente, confirmando que el preentrenamiento específico de dominio e idioma pesa más que la cobertura multilingüe.
+
+\textbf{Conjunto de datos.} Corpus SAD (Spanish Anorexia Detection): 5{,}707 tweets en español --- 2{,}707 etiquetados como anorexia (vía hashtag \#anaymia) y 3{,}000 como control (\#realfood, \#comidareal, \#fitness).
+
+\textbf{Metodología.} Fine-tuning estándar de cada transformer con cabeza de clasificación sobre el token [CLS]: optimizador AdamW, batch~16, 2--4 epochs, tasa de aprendizaje $\approx 2\text{e-}5$. Se incluye análisis de cobertura del vocabulario que mide qué tan bien cada modelo tokeniza jerga española de ED (``gorda'', ``delgada'', ``flaca'').
+
+\textbf{Atributos.} Embeddings contextuales [CLS] (768-dim en las variantes base). Sin atributos hechos a mano.
+
+\textbf{Desempeño.} \textbf{BETO F1 = 94.1\%}; mBERT 91.1\%; XLM 91.3\%; CNN 90.5\%; LSTM 90.8\%. BETO supera a la referencia SVM/MLP de 2019 (91.6\%) por $\approx$2.76 puntos F1.
+
+\textbf{Fortalezas y limitaciones.} Comparación limpia cabeza a cabeza con análisis de vocabulario; corpus público reproducible. Limitaciones: sólo Twitter, sólo español, textos cortos; etiquetado débil por hashtag en lugar de diagnóstico clínico; AUC no reportado.
+
+\textbf{Pertinencia para el equipo.} Referencia fundamental si se decide extender el proyecto a \emph{español o bilingüe}. De otra forma, ofrece un límite superior útil: los transformers monolingües de dominio pueden superar F1~=~0.94 sobre Twitter de ED etiquetado por hashtags.
+
+% -------------------------------------------
+\subsection{Benítez-Andrades et al. (2022): BERT contra ML clásico para tweets de ED}
+% -------------------------------------------
+
+\textbf{Referencia completa.} Benítez-Andrades, J.~A.; Alija-Pérez, J.-M.; Vidal, M.-E.; Pastor-Vargas, R.; García-Ordás, M.~T. (2022). \emph{Traditional Machine Learning Models and BERT-Based Automatic Classification of Tweets About Eating Disorders: Algorithm Development and Validation Study}. \textit{JMIR Medical Informatics}, 10(2), e34492. DOI: 10.2196/34492 \cite{benitez2022bert}.
+
+\textbf{Aportación principal.} Enfrenta sistemáticamente cinco clasificadores clásicos (SVM, RF, LR, k-NN, Naive Bayes sobre TF-IDF) contra cinco variantes de transformers (BERT-base, BERT-large, RoBERTa, XLNet, DistilBERT) sobre cuatro tareas de clasificación de tweets de ED: sufriente vs.~no, promocional de ED vs.~no, informativo vs.~no, científico vs.~no. Los transformers ganan consistentemente.
+
+\textbf{Conjunto de datos.} 1{,}058{,}957 tweets sobre ED recolectados durante tres meses; 2{,}000 anotados manualmente sobre las cuatro dimensiones. Inglés. El subconjunto etiquetado es balanceado y se publicó en Kaggle/Zenodo.
+
+\textbf{Metodología.} Partición 80/20 con validación cruzada. Clásicos: TF-IDF unigramas + cada clasificador. Transformers: cabeza sobre [CLS]; AdamW; batch~16; 3--4 epochs; LR~$\approx 2\text{e-}5$.
+
+\textbf{Atributos.} TF-IDF unigramas para clásicos; embeddings contextuales 768-/1024-dim para transformers.
+
+\textbf{Desempeño.} Los transformers obtienen F1 en el rango \textbf{71.1\%--86.4\%} en las cuatro tareas (máximo en clasificación sufriente vs.~no, mínimo en contenido promocional). RoBERTa alcanza $\approx$87.5\% de exactitud en la tarea binaria sufriente vs.~no.
+
+\textbf{Fortalezas y limitaciones.} Estudio canónico revisado por pares ``BERT vence al ML clásico para tweets de ED''; comparación cabeza a cabeza sobre diez modelos; corpus abierto. En contra: tweets en lugar de Reddit; etiquetado débil basado en hashtags; mezcla detección clínica con moderación de contenido; AUC y ERDE no reportados.
+
+\textbf{Pertinencia para el equipo.} Constituye la \emph{cita más fuerte} para justificar la hipótesis central del reto: los transformers ajustados superan a TF-IDF+LR en clasificación de ED. Es directamente transferible: se puede replicar la misma matriz de diez modelos sobre datos de Reddit y reportar AUC además de F1.
+
+% -------------------------------------------
+\subsection{Thompson y Errecalde (2024): BERT temporal para eRisk 2024}
+% -------------------------------------------
+
+\textbf{Referencia completa.} Thompson, H.; Errecalde, M. (2024). \emph{A Time-Aware Approach to Early Detection of Anorexia: UNSL at eRisk 2024}. En \textit{Working Notes of CLEF 2024}, CEUR-WS vol.~3740, paper~86. arXiv:2410.17963 \cite{thompson2024timeaware}.
+
+\textbf{Aportación principal.} Aborda la Tarea~2 de eRisk~2024 (detección temprana de anorexia en Reddit). Ajusta BERT-base bajo una canalización CPI (clasificación con información parcial) + DMC (componente de toma de decisiones) e introduce una variante \textbf{consciente del tiempo} que anexa un token [TIME] que codifica el retraso de publicación y entrena con una pérdida alineada a ERDE50. UNSL ocupó el segundo lugar en ERDE50 y el primero en varias métricas de ranking.
+
+\textbf{Conjunto de datos.} Conjunto de prueba de eRisk~2024 Tarea~2 anorexia en Reddit: \textbf{784 usuarios (92 positivos / 692 negativos; 12\% de prevalencia, media de 626 publicaciones por usuario)}. El entrenamiento combina eRisk~2018 train (152 usuarios: 20+/132$-$) y eRisk~2019 (815 usuarios: 73+/742$-$).
+
+\textbf{Metodología.} UNSL\#0 y \#1 hacen fine-tuning de \texttt{bert-base-uncased} (AdamW, LR~3e-5 o 5e-5, batch~8, 5 epochs); UNSL\#1 extiende el vocabulario BERT con \textbf{50 tokens predictivos de anorexia} seleccionados mediante SS3 (por ejemplo: \textit{calories, binge, tulpa, purging, underweight}). UNSL\#2 añade entradas \texttt{[CLS] texto [TIME] retraso [SEP]} y una pérdida consciente de ERDE50, con 10 epochs. El DMC usa una regla de umbral histórica (umbral 0.7, retraso mínimo 10, $M=10$).
+
+\textbf{Atributos.} Embedding [CLS] de BERT (768-dim) + 50 tokens de dominio seleccionados por SS3 anexados al vocabulario.
+
+\textbf{Desempeño (eRisk 2024 Tarea 2, basado en decisión).} La Tabla~\ref{tab:unsl2024} resume los resultados oficiales.
+
+\begin{table}[!htbp]
+\centering
+\caption{Resultados oficiales eRisk 2024 Tarea 2 (anorexia).}
+\label{tab:unsl2024}
+\small
+\renewcommand{\arraystretch}{1.2}
+\begin{tabular}{lccccc}
+\toprule
+\textbf{Modelo} & \textbf{P} & \textbf{R} & \textbf{F1} & \textbf{ERDE5}$\downarrow$ & \textbf{ERDE50}$\downarrow$ \\
+\midrule
+UNSL\#0              & 0.35 & 0.99 & 0.52 & 0.14 & 0.03 \\
+UNSL\#1              & 0.42 & 0.96 & 0.59 & 0.14 & 0.03 \\
+UNSL\#2 (temporal)   & 0.42 & 0.97 & 0.59 & 0.14 & 0.03 \\
+NLP-UNED\#1 (mejor F1) & 0.67 & 0.97 & 0.79 & 0.09 & 0.04 \\
+Riewe-Perla\#0 (mejor ERDE5) & 0.45 & 0.97 & 0.62 & 0.07 & 0.02 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Métricas de ranking: UNSL\#0 alcanza P@10~=~1.00 y NDCG@100~=~0.76 tras 1000 publicaciones. \textbf{AUC no se reporta} en eRisk (no es parte del conjunto oficial de métricas del shared task).
+
+\textbf{Fortalezas y limitaciones.} Directamente sobre el benchmark Reddit de referencia; reporte completo de ERDE/latencia; integración novedosa de información temporal dentro de la pérdida de fine-tuning. La baja precisión es inherente al desbalance de clases; sólo se usa BERT-base; no hay comparación contra LLMs.
+
+\textbf{Pertinencia para el equipo.} \emph{El artículo más relevante para la referencia transformer de la Fase~3.} Proporciona hiperparámetros exactos, una lista publicada de tokens de dominio, y métricas oficiales eRisk para benchmarking. El equipo debería reproducir UNSL\#1 como transformer primario y calcular AUC a partir de las probabilidades posteriores del modelo.
+
+% -------------------------------------------
+\subsection{Grigore y Pintilie (2023): MentalBERT con topic modeling basado en transformers}
+% -------------------------------------------
+
+\textbf{Referencia completa.} Grigore, D.-N.; Pintilie, I. (2023). \emph{Transformer-Based Topic Modeling to Measure the Severity of Eating Disorder Symptoms}. En \textit{Working Notes of CLEF 2023}, CEUR-WS vol.~3497, pp.~684--692 \cite{grigore2023mentalbert}.
+
+\textbf{Aportación principal.} Aborda la Tarea~3 de eRisk~2023: predecir respuestas del cuestionario EDE-Q (Eating Disorder Examination Questionnaire) a partir del historial de Reddit de un usuario. Combina \textbf{MentalBERT} (Ji et al.~2022), un transformer específico de dominio preentrenado sobre contenido de Reddit de salud mental, con topic modeling estilo BERTopic para agregar historiales largos antes de regresar cada uno de los 22 ítems del EDE-Q en una escala de severidad 0--6.
+
+\textbf{Conjunto de datos.} Corpus eRisk~2022/2023 ED en Reddit: usuarios con historiales completos de publicaciones y etiquetas EDE-Q; pocas decenas de sujetos con timelines muy largos.
+
+\textbf{Metodología.} MentalBERT produce embeddings por publicación; sentence-transformer + UMAP + HDBSCAN generan temas latentes de síntomas ED; los vectores por tema alimentan una cabeza de regresión multi-salida que predice severidades EDE-Q enteras.
+
+\textbf{Atributos.} Embeddings contextuales MentalBERT de 768-dim; IDs de cluster BERTopic y pesos c-TF-IDF.
+
+\textbf{Desempeño.} Se reportan MAE, MZOE, RMSE y GED (Global Eating Disorder distance). El equipo figuró entre los mejores participantes del overview de la Tarea~3 2023; los valores numéricos completos están en el paper CEUR.
+
+\textbf{Fortalezas y limitaciones.} \emph{Único artículo de esta revisión que emplea MentalBERT explícitamente} sobre eRisk ED; solución elegante para la agregación de historiales largos. Aborda regresión de severidad y no clasificación binaria, por lo que los resultados no son directamente comparables en AUC; revisión por pares al nivel de working notes; tamaño muestral muy pequeño.
+
+\textbf{Pertinencia para el equipo.} Cita esencial para justificar el uso de MentalBERT (o MentalRoBERTa) como \emph{alternativa especializada al BERT genérico}. Aunque el encuadre de la tarea difiere, el truco de agregación temática es transferible: para un equipo que trabaja con usuarios de Reddit que publican cientos de mensajes, clustering previo a la clasificación es una forma robusta de construir representaciones de usuario de longitud fija.
+
+% -------------------------------------------
+\subsection{Saini y Sen (2026): Transformer de series temporales frente a LLMs zero-shot}
+% -------------------------------------------
+
+\textbf{Referencia completa.} Saini, S.; Sen, P. (2026). \emph{Early Detection of Anorexia from Reddit Posts Using Time-Series Based Transformer Model}. \textit{Discover Computing}, 29, artículo 19. DOI: 10.1007/s10791-026-09903-3 \cite{saini2026patchtst}.
+
+\textbf{Aportación principal.} Proponen un \textbf{transformer de series temporales PatchTST} aplicado a la actividad longitudinal de Reddit fusionada con características afectivas léxicas, y lo comparan contra referencias LLM zero-shot --- \textbf{LLaMA-3 8B, Mistral-7B, Gemma-7B-Instruct, GPT-3.5 y MentaLlama} --- que reciben historiales de publicaciones resumidos por GPT-4.1. Añaden un análisis de explicación post-hoc que alinea las atribuciones con palabras salientes marcadas por humanos.
+
+\textbf{Conjunto de datos.} Corpus anorexia eRisk (train/test 2018) en Reddit. Datasets de salud mental adicionales para experimentos de generalización. La distribución de clases sigue eRisk ($\approx$10--15\% positivo).
+
+\textbf{Metodología.} PatchTST ingiere secuencias de embeddings transformer a nivel de publicación + características emocionales manuales, modelando conjuntamente la señal semántica y temporal. Las referencias LLM comprimen cada historial de usuario con GPT-4.1 (compresión promedio \textbf{13.7$\times$}) en resúmenes de tres oraciones, y posteriormente solicitan a cada LLM la clasificación binaria de anorexia en configuración zero-shot.
+
+\textbf{Atributos.} Embeddings transformer a nivel de publicación; características de intensidad emocional NRC; ``parches'' temporales sobre timelines de usuario como entradas para PatchTST.
+
+\textbf{Desempeño.} \textbf{Exactitud del modelo propuesto~=~85.2\%} sobre eRisk anorexia, superando referencias transformer basadas sólo en semántica. Los valores completos de Precisión/Recall/F1/ERDE figuran en la Tabla~2 del paper. \textbf{Los LLMs zero-shot (LLaMA-3, Mistral, Gemma, GPT-3.5, MentaLlama) tienen un desempeño inferior a la pipeline transformer ajustada finamente} ---consistente con Xu et al.~(2024) y Yang et al.~(2023) en otras tareas de salud mental. AUC no es el titular pero se puede calcular a partir del código publicado.
+
+\textbf{Fortalezas y limitaciones.} Es el más reciente (2026), open-access y con \textbf{código publicado}; comparación explícita LLM vs.~transformer sobre el corpus Reddit eRisk exacto; análisis de interpretabilidad. La métrica principal es exactitud sobre una clase desbalanceada; PatchTST es menos estándar que BERT; AUC no figura en el resumen.
+
+\textbf{Pertinencia para el equipo.} \emph{La referencia ideal para la pregunta de investigación central del equipo}: ¿un LLM supera a un transformer ajustado sobre Reddit anorexia? La respuesta aquí, respaldada por código, es ``no, los LLMs zero-shot quedan rezagados''. La receta resume-y-prompt es además una referencia LLM realista para un equipo con presupuesto estudiantil (LLaMA-3 8B de pesos abiertos sobre una única GPU de 24~GB, o API de OpenAI).
+
+% ===============================================================
+\section{Resumen Comparativo}
+% ===============================================================
+
+La Tabla~\ref{tab:comparison} consolida los diez artículos revisados en términos de método, corpus y métrica clave. Como dimensión de desempeño alineada al reto se privilegian AUC, F1 y exactitud, complementadas con ERDE cuando aplica.
+
+\begin{table*}[!htbp]
+\centering
+\caption{Resumen comparativo de los diez artículos seleccionados.}
+\label{tab:comparison}
+\footnotesize
+\renewcommand{\arraystretch}{1.3}
+\begin{tabularx}{\textwidth}{@{}c l c X l c@{}}
+\toprule
+\textbf{\#} & \textbf{Artículo} & \textbf{Año} & \textbf{Método} & \textbf{Métrica Clave} & \textbf{Fase} \\
+\midrule
+1 & Aguilera et al.~\cite{aguilera2021oneclass}           & 2021 & OCC-kSS, gSC (one-class)                    & F1 competitivo con SOTA binario                & 2 \\
+2 & Aragón et al.~\cite{aragon2023bose}                   & 2023 & BoSE + D-BoSE fusión tardía + LR            & \textbf{F1 = 0.84}, P = 0.87, R = 0.80         & 2 \\
+3 & Aragón et al.~\cite{aragon2022multichannel}           & 2022 & CNN multi-canal + GMU                       & Supera a todos los participantes eRisk         & 2 \\
+4 & Ramírez-Cifuentes et al.~\cite{ramirez2020enhanced}   & 2020 & Embeddings Dict2vec enriquecidos + LR/RF/SVM& F1 positivo $\approx$ 0.80                     & 2 \\
+5 & Villa-Pérez et al.~\cite{villa2023bilingual}          & 2023 & TF-IDF/LIWC/POS/LDA + SVM/RF/XGB/CNN/LSTM   & F1 por condición (9 clases)                    & 2 \\
+6 & López-Úbeda et al.~\cite{lopezubeda2021transfer}      & 2021 & BETO, mBERT, XLM fine-tune                  & \textbf{BETO F1 = 94.1\%}                      & 3 \\
+7 & Benítez-Andrades et al.~\cite{benitez2022bert}        & 2022 & BERT/RoBERTa/XLNet/DistilBERT vs.~clásicos  & Transformers F1 = 71.1--86.4\%                 & 3 \\
+8 & Thompson \& Errecalde~\cite{thompson2024timeaware}    & 2024 & BERT temporal + vocab SS3 + DMC             & F1 = 0.59, ERDE50 = 0.03                       & 3 \\
+9 & Grigore \& Pintilie~\cite{grigore2023mentalbert}      & 2023 & MentalBERT + BERTopic                       & MAE/RMSE/GED (regresión)                       & 3 \\
+10 & Saini \& Sen~\cite{saini2026patchtst}                & 2026 & PatchTST vs.~LLMs zero-shot                 & \textbf{Exactitud = 85.2\%}; LLMs por debajo   & 3 \\
+\bottomrule
+\end{tabularx}
+\end{table*}
+
+% ===============================================================
+\section{Implicaciones para la Propuesta de Solución}
+% ===============================================================
+
+Del análisis consolidado de la revisión emergen cuatro implicaciones operativas para el diseño de la solución al reto:
+
+\textbf{Primera.} La referencia clásica individual más fuerte a vencer es BoSE de Aragón et al.~\cite{aragon2023bose}, con un F1~=~0.84 sobre eRisk~2018 anorexia. Todos sus componentes ---sub-embeddings FastText, NRC EmoLex, clustering $K$-means, Regresión Logística--- son de código abierto y se ejecutan en minutos sobre una laptop. Dado que la LR emite probabilidades posteriores, calcular AUC sobre la misma partición de 320 usuarios de prueba es trivial. \emph{Reproducir BoSE debería constituir el experimento ancla de la Fase~2}, con BoW/TF-IDF + LR y Word2Vec enriquecido~\cite{ramirez2020enhanced} como referencias más débiles y OCC-kSS~\cite{aguilera2021oneclass} como complemento sin datos negativos.
+
+\textbf{Segunda.} Para la Fase~3, se recomienda ajustar BERT-base siguiendo la receta UNSL~2024~\cite{thompson2024timeaware} y añadir un comparador LLM zero-shot. Los hiperparámetros publicados (AdamW, LR 3e-5 o 5e-5, batch~8, 5 epochs, 50 tokens SS3 de anorexia agregados al vocabulario) son directamente reutilizables y su F1~=~0.59 sobre eRisk~2024 constituye un objetivo realista bajo el duro desbalance de clases. Incorporar el protocolo resume-y-prompt de Saini y Sen~\cite{saini2026patchtst} con LLaMA-3 8B o Mistral-7B de pesos abiertos provee un segundo comparador de bajo costo. Si existe capacidad para un modelo extra, \textbf{MentalBERT} es la elección clara: Grigore y Pintilie~\cite{grigore2023mentalbert} demuestran que maneja bien historiales largos de Reddit.
+
+\textbf{Tercera.} Tres brechas metodológicas sobresalen y sirven para posicionar el trabajo del equipo: (i) \emph{el AUC casi nunca se reporta en la literatura eRisk} ---el shared task evalúa F1, ERDE-5, ERDE-50 y latencia--- por lo que nuestra decisión de evaluar bajo AUC es una contribución genuina; (ii) los LLMs zero-shot \emph{consistentemente quedan por debajo} de los transformers ajustados, invirtiendo la narrativa popular de supremacía LLM, lo cual es un hallazgo valioso a destacar; (iii) ningún artículo publicado combina un transformer consciente del tiempo con prompting cadena-de-pensamiento o generación aumentada por recuperación (RAG), abriendo una posible avenida de innovación.
+
+\textbf{Cuarta: columna experimental recomendada.} Entrenar y evaluar sobre la partición canónica \emph{eRisk~2018 Tarea~2 anorexia} (152 train / 320 test) para garantizar comparabilidad directa con los cinco artículos de la Fase~2 y con el corpus de entrenamiento de UNSL. En la Fase~2: TF-IDF+LR, Word2Vec+LR (vanilla y enriquecido al dominio), LIWC+LR, BoSE+LR, y una concatenación multi-canal. En la Fase~3: fine-tuning de BERT-base, fine-tuning de MentalBERT y LLaMA-3 8B zero-shot con resumen estilo GPT-4. Reportar \textbf{AUC, F1, precisión, recall, ERDE-5 y ERDE-50} para cada configuración, y graficar curvas ROC para la comparación cabeza a cabeza clásico vs.~transformer.
+
+% ===============================================================
+\section{Conclusiones}
+% ===============================================================
+
+La revisión de los diez artículos converge en una narrativa clara. Las pipelines clásicas siguen siendo \emph{sorprendentemente fuertes} en la detección de anorexia cuando explotan emoción (BoSE), estilo (LIWC) o embeddings adaptados al dominio: alcanzan F1 en el rango 0.80--0.85 sobre eRisk~2018 con clasificadores lineales simples, y son más rápidas, baratas e interpretables que los transformers. Los transformers ajustados finamente, en especial \textbf{BERT con extensiones de vocabulario específicas de dominio} y \textbf{MentalBERT}, empujan la frontera aún más en ediciones más recientes de eRisk y dominan bajo métricas de detección temprana. Los LLMs zero-shot, a pesar del hype, \emph{no} superan actualmente a los transformers ajustados para anorexia en Reddit. El estudio comparativo AUC planteado en TC3002B, ejecutado sobre la partición canónica eRisk~2018, está bien posicionado para producir una contribución genuina al llenar la brecha del reporte AUC y cuantificar la trayectoria clásico-a-LLM sobre un benchmark consistente.
+
+% ===============================================================
+% Bibliografía
+% ===============================================================
+\begin{thebibliography}{10}
+
+\bibitem{montejo2024survey}
+A.~Montejo-R\'aez, M.~D.~Molina-Gonz\'alez, S.~M.~Jim\'enez-Zafra, M.~\'A.~Garc\'ia-Cumbreras, and L.~J.~Garc\'ia-L\'opez, ``A survey on detecting mental disorders with natural language processing: Literature review, trends and challenges,'' \emph{Computer Science Review}, vol.~53, p.~100654, 2024.
+
+\bibitem{aguilera2021oneclass}
+J.~Aguilera, D.~I.~Hern\'andez Far\'ias, R.~M.~Ortega-Mendoza, and M.~Montes-y-G\'omez, ``Depression and anorexia detection in social media as a one-class classification problem,'' \emph{Applied Intelligence}, vol.~51, no.~8, pp.~6088--6103, 2021. DOI: 10.1007/s10489-020-02131-2.
+
+\bibitem{aragon2023bose}
+M.~E.~Arag\'on, A.~P.~L\'opez-Monroy, L.~C.~Gonz\'alez-Gurrola, and M.~Montes-y-G\'omez, ``Detecting mental disorders in social media through emotional patterns - The case of anorexia and depression,'' \emph{IEEE Transactions on Affective Computing}, vol.~14, no.~1, pp.~211--222, 2023.
+
+\bibitem{aragon2022multichannel}
+M.~E.~Arag\'on, A.~P.~L\'opez-Monroy, L.~C.~Gonz\'alez, and M.~Montes-y-G\'omez, ``Approaching what and how people with mental disorders communicate in social media--Introducing a multi-channel representation,'' \emph{Neural Computing and Applications}, vol.~34, no.~22, pp.~20149--20164, 2022. DOI: 10.1007/s00521-022-07569-8.
+
+\bibitem{ramirez2020enhanced}
+D.~Ram\'irez-Cifuentes, C.~Largeron, J.~Tissier, A.~Freire, and R.~Baeza-Yates, ``Enhanced word embeddings for anorexia nervosa detection on social media,'' in \emph{Advances in Intelligent Data Analysis XVIII (IDA 2020)}, LNCS vol.~12080. Springer, 2020, pp.~404--417. DOI: 10.1007/978-3-030-44584-3\_32.
+
+\bibitem{villa2023bilingual}
+M.~E.~Villa-P\'erez, L.~A.~Trejo, M.~B.~Moin, and E.~Stroulia, ``Extracting mental health indicators from English and Spanish social media: A machine learning approach,'' \emph{IEEE Access}, vol.~11, pp.~128135--128152, 2023. DOI: 10.1109/ACCESS.2023.3332289.
+
+\bibitem{lopezubeda2021transfer}
+P.~L\'opez-\'Ubeda, F.~M.~Plaza-del-Arco, M.~C.~D\'iaz-Galiano, and M.-T.~Mart\'in-Valdivia, ``How successful is transfer learning for detecting anorexia on social media?'' \emph{Applied Sciences}, vol.~11, no.~4, p.~1838, 2021. DOI: 10.3390/app11041838.
+
+\bibitem{benitez2022bert}
+J.~A.~Ben\'itez-Andrades, J.-M.~Alija-P\'erez, M.-E.~Vidal, R.~Pastor-Vargas, and M.~T.~Garc\'ia-Ord\'as, ``Traditional machine learning models and BERT-based automatic classification of tweets about eating disorders: Algorithm development and validation study,'' \emph{JMIR Medical Informatics}, vol.~10, no.~2, p.~e34492, 2022. DOI: 10.2196/34492.
+
+\bibitem{thompson2024timeaware}
+H.~Thompson and M.~Errecalde, ``A time-aware approach to early detection of anorexia: UNSL at eRisk 2024,'' in \emph{Working Notes of CLEF 2024}, CEUR-WS vol.~3740, paper~86, 2024. arXiv:2410.17963.
+
+\bibitem{grigore2023mentalbert}
+D.-N.~Grigore and I.~Pintilie, ``Transformer-based topic modeling to measure the severity of eating disorder symptoms,'' in \emph{Working Notes of CLEF 2023}, CEUR-WS vol.~3497, 2023, pp.~684--692.
+
+\bibitem{saini2026patchtst}
+S.~Saini and P.~Sen, ``Early detection of anorexia from Reddit posts using time-series based transformer model,'' \emph{Discover Computing}, vol.~29, art.~19, 2026. DOI: 10.1007/s10791-026-09903-3.
+
+\end{thebibliography}
+
+\end{document}

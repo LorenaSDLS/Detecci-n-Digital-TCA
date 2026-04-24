@@ -182,3 +182,23 @@ tb_logs/
 runs/
 outputs/
 tmp/
+
+# ---- LaTeX / Tectonic ----
+*.aux
+*.bbl
+*.blg
+*.log
+*.out
+*.toc
+*.lof
+*.lot
+*.fls
+*.fdb_latexmk
+*.synctex.gz
+*.synctex(busy)
+*.nav
+*.snm
+*.vrb
+*.pdf
+build/
+.tectonic-cache/
