@@ -32,6 +32,7 @@
 }
 \usepackage{cite}
 \usepackage{textcomp}
+\usepackage{dblfloatfix}
 
 % Permite saltos de línea en URLs largas
 \def\UrlBreaks{\do\/\do-\do_\do.\do?\do=}
@@ -251,19 +252,21 @@ Los cinco artículos de esta sección emplean técnicas de vanguardia alineadas 
 \centering
 \caption{Resultados oficiales eRisk 2024 Tarea 2 (anorexia).}
 \label{tab:unsl2024}
-\small
 \renewcommand{\arraystretch}{1.2}
+\setlength{\tabcolsep}{4pt}
+\resizebox{\columnwidth}{!}{%
 \begin{tabular}{lccccc}
 \toprule
 \textbf{Modelo} & \textbf{P} & \textbf{R} & \textbf{F1} & \textbf{ERDE5}$\downarrow$ & \textbf{ERDE50}$\downarrow$ \\
 \midrule
-UNSL\#0              & 0.35 & 0.99 & 0.52 & 0.14 & 0.03 \\
-UNSL\#1              & 0.42 & 0.96 & 0.59 & 0.14 & 0.03 \\
-UNSL\#2 (temporal)   & 0.42 & 0.97 & 0.59 & 0.14 & 0.03 \\
-NLP-UNED\#1 (mejor F1) & 0.67 & 0.97 & 0.79 & 0.09 & 0.04 \\
+UNSL\#0                      & 0.35 & 0.99 & 0.52 & 0.14 & 0.03 \\
+UNSL\#1                      & 0.42 & 0.96 & 0.59 & 0.14 & 0.03 \\
+UNSL\#2 (temporal)           & 0.42 & 0.97 & 0.59 & 0.14 & 0.03 \\
+NLP-UNED\#1 (mejor F1)       & 0.67 & 0.97 & 0.79 & 0.09 & 0.04 \\
 Riewe-Perla\#0 (mejor ERDE5) & 0.45 & 0.97 & 0.62 & 0.07 & 0.02 \\
 \bottomrule
-\end{tabular}
+\end{tabular}%
+}
 \end{table}
 
 Métricas de ranking: UNSL\#0 alcanza P@10~=~1.00 y NDCG@100~=~0.76 tras 1000 publicaciones. \textbf{AUC no se reporta} en eRisk (no es parte del conjunto oficial de métricas del shared task).
@@ -312,18 +315,13 @@ Métricas de ranking: UNSL\#0 alcanza P@10~=~1.00 y NDCG@100~=~0.76 tras 1000 pu
 
 \textbf{Pertinencia para el equipo.} \emph{La referencia ideal para la pregunta de investigación central del equipo}: ¿un LLM supera a un transformer ajustado sobre Reddit anorexia? La respuesta aquí, respaldada por código, es ``no, los LLMs zero-shot quedan rezagados''. La receta resume-y-prompt es además una referencia LLM realista para un equipo con presupuesto estudiantil (LLaMA-3 8B de pesos abiertos sobre una única GPU de 24~GB, o API de OpenAI).
 
-% ===============================================================
-\section{Resumen Comparativo}
-% ===============================================================
-
-La Tabla~\ref{tab:comparison} consolida los diez artículos revisados en términos de método, corpus y métrica clave. Como dimensión de desempeño alineada al reto se privilegian AUC, F1 y exactitud, complementadas con ERDE cuando aplica.
-
-\begin{table*}[!htbp]
+\begin{table*}[!tb]
 \centering
 \caption{Resumen comparativo de los diez artículos seleccionados.}
 \label{tab:comparison}
 \footnotesize
-\renewcommand{\arraystretch}{1.3}
+\renewcommand{\arraystretch}{1.2}
+\setlength{\tabcolsep}{4pt}
 \begin{tabularx}{\textwidth}{@{}c l c X l c@{}}
 \toprule
 \textbf{\#} & \textbf{Artículo} & \textbf{Año} & \textbf{Método} & \textbf{Métrica Clave} & \textbf{Fase} \\
@@ -341,6 +339,12 @@ La Tabla~\ref{tab:comparison} consolida los diez artículos revisados en términ
 \bottomrule
 \end{tabularx}
 \end{table*}
+
+% ===============================================================
+\section{Resumen Comparativo}
+% ===============================================================
+
+La Tabla~\ref{tab:comparison} consolida los diez artículos revisados en términos de método, corpus y métrica clave. Como dimensión de desempeño alineada al reto se privilegian AUC, F1 y exactitud, complementadas con ERDE cuando aplica.
 
 % ===============================================================
 \section{Implicaciones para la Propuesta de Solución}
