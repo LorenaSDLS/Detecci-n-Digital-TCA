@@ -361,10 +361,22 @@ Del análisis consolidado de la revisión emergen cuatro implicaciones operativa
 \textbf{Cuarta: columna experimental recomendada.} Entrenar y evaluar sobre la partición canónica \emph{eRisk~2018 Tarea~2 anorexia} (152 train / 320 test) para garantizar comparabilidad directa con los cinco artículos de la Fase~2 y con el corpus de entrenamiento de UNSL. En la Fase~2: TF-IDF+LR, Word2Vec+LR (vanilla y enriquecido al dominio), LIWC+LR, BoSE+LR, y una concatenación multi-canal. En la Fase~3: fine-tuning de BERT-base, fine-tuning de MentalBERT y LLaMA-3 8B zero-shot con resumen estilo GPT-4. Reportar \textbf{AUC, F1, precisión, recall, ERDE-5 y ERDE-50} para cada configuración, y graficar curvas ROC para la comparación cabeza a cabeza clásico vs.~transformer.
 
 % ===============================================================
+\section{Trabajo Futuro y Objetivos Experimentales}
+% ===============================================================
+
+Aunque el alcance de este documento es la revisión del estado del arte, conviene explicitar los objetivos experimentales que guiarán las entregas posteriores del reto ---en particular el documento Fase~2A--- para asegurar la trazabilidad entre la evidencia revisada y las decisiones de diseño.
+
+\textbf{Objetivos de la Fase~2 (entrega 2A).} (i) Construir la pipeline reproducible de preprocesamiento, particionado y evaluación sobre eRisk~2018 Tarea~2 anorexia, fijando las particiones canónicas (152 train / 320 test) y las métricas comunes a todos los experimentos (\textbf{AUC, F1, precisión, recall, ERDE-5 y ERDE-50}). (ii) Implementar como referencias clásicas: TF-IDF+LR, Word2Vec promediado por usuario, LIWC+LR, BoSE+LR (réplica de Aragón et al.~\cite{aragon2023bose}) y un OCC-kSS ablativo siguiendo a Aguilera et al.~\cite{aguilera2021oneclass}. (iii) Reportar el primer punto de la curva clásico--transformer mediante el AUC de cada referencia.
+
+\textbf{Objetivos de la Fase~3.} (i) Ajustar BERT-base con la receta UNSL\#1~\cite{thompson2024timeaware} (50 tokens SS3 anexados al vocabulario, AdamW, LR 3e-5, batch~8, 5 epochs) y MentalBERT como variante específica de dominio. (ii) Implementar el comparador LLM zero-shot resume-y-prompt de Saini y Sen~\cite{saini2026patchtst} sobre LLaMA-3 8B o Mistral-7B. (iii) Producir las curvas ROC cabeza a cabeza y un análisis de error cualitativo sobre los falsos negativos, dado que constituyen el modo de fallo clínicamente más costoso.
+
+% ===============================================================
 \section{Conclusiones}
 % ===============================================================
 
 La revisión de los diez artículos converge en una narrativa clara. Las pipelines clásicas siguen siendo \emph{sorprendentemente fuertes} en la detección de anorexia cuando explotan emoción (BoSE), estilo (LIWC) o embeddings adaptados al dominio: alcanzan F1 en el rango 0.80--0.85 sobre eRisk~2018 con clasificadores lineales simples, y son más rápidas, baratas e interpretables que los transformers. Los transformers ajustados finamente, en especial \textbf{BERT con extensiones de vocabulario específicas de dominio} y \textbf{MentalBERT}, empujan la frontera aún más en ediciones más recientes de eRisk y dominan bajo métricas de detección temprana. Los LLMs zero-shot, a pesar del hype, \emph{no} superan actualmente a los transformers ajustados para anorexia en Reddit. El estudio comparativo AUC planteado en TC3002B, ejecutado sobre la partición canónica eRisk~2018, está bien posicionado para producir una contribución genuina al llenar la brecha del reporte AUC y cuantificar la trayectoria clásico-a-LLM sobre un benchmark consistente.
+
+Más allá de los números, los hallazgos revisados subrayan que el diseño responsable de sistemas de detección de desórdenes alimenticios debe priorizar la \emph{interpretabilidad}, la \emph{calibración a costos clínicos asimétricos} ---donde un falso negativo puede ser irreversible--- y la \emph{permanencia del juicio humano} (clínico, moderador o paciente) en el bucle de decisión. La detección automática no debe entenderse como sustituto del diagnóstico clínico, sino como una herramienta de tamizaje y alerta temprana cuyo valor real depende de su integración ética con los flujos de atención y de la protección de la privacidad de poblaciones vulnerables.
 
 % ===============================================================
 % Bibliografía
