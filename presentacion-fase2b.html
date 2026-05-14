@@ -1,0 +1,2339 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Detección Digital de Anorexia · Fase 2-B · Equipo 8</title>
+
+<!-- Tipografía: Cormorant (display serif) + IBM Plex Sans/Mono -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=IBM+Plex+Sans:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+<style>
+/* ===========================================
+   TEMA — Editorial oscuro académico-clínico
+   Modifica :root para cambiar toda la paleta
+   =========================================== */
+:root {
+    /* Colores principales — paleta azul oscura editorial */
+    --bg-primary:   #08111f;  /* Azul noche profundo */
+    --bg-secondary: #0d1828;
+    --bg-card:      #122036;
+    --bg-elevated:  #1a2b47;
+
+    --text-primary:   #e6ecf3;
+    --text-secondary: #94a6bc;
+    --text-muted:     #5b6f88;
+
+    /* Acentos — azul dominante + cálidos como soporte */
+    --accent-warm:  #6cb4ee;  /* Azul cielo — acento principal (datos/títulos) */
+    --accent-deep:  #4d8fd5;  /* Azul medio — variante */
+    --accent-coral: #e07a5f;  /* Coral — alertas/falsos positivos */
+    --accent-sage:  #7fbf9a;  /* Verde sage — éxito/métricas */
+    --accent-rose:  #c8929c;  /* Rosa apagado — clínico */
+    --accent-gold:  #d4b574;  /* Oro tenue — destacados puntuales */
+
+    --line: rgba(176, 200, 230, 0.08);
+    --line-strong: rgba(176, 200, 230, 0.18);
+
+    /* Tipografía */
+    --font-display: 'Cormorant', Georgia, serif;
+    --font-body: 'IBM Plex Sans', system-ui, sans-serif;
+    --font-mono: 'IBM Plex Mono', monospace;
+
+    /* Tamaños responsivos */
+    --title-size:    clamp(2rem, 5.5vw, 4.5rem);
+    --h2-size:       clamp(1.4rem, 3.2vw, 2.6rem);
+    --h3-size:       clamp(1rem, 2.1vw, 1.5rem);
+    --body-size:     clamp(0.75rem, 1.15vw, 1rem);
+    --small-size:    clamp(0.65rem, 0.95vw, 0.85rem);
+    --mono-size:     clamp(0.7rem, 1vw, 0.9rem);
+
+    --slide-padding: clamp(1.5rem, 4vw, 4rem);
+    --content-gap:   clamp(0.75rem, 1.8vw, 1.8rem);
+    --element-gap:   clamp(0.4rem, 1vw, 0.9rem);
+
+    /* Animación */
+    --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+    --duration-normal: 0.7s;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+/* === VIEWPORT BASE (mandatorio) === */
+html, body { height: 100%; overflow-x: hidden; }
+html { scroll-snap-type: y mandatory; scroll-behavior: smooth; }
+
+body {
+    font-family: var(--font-body);
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    font-size: var(--body-size);
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+    font-feature-settings: 'kern' 1, 'liga' 1;
+}
+
+.slide {
+    width: 100vw;
+    height: 100vh;
+    height: 100dvh;
+    overflow: hidden;
+    scroll-snap-align: start;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    padding: var(--slide-padding);
+    background: var(--bg-primary);
+}
+
+.slide-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    max-height: 100%;
+    overflow: hidden;
+    width: 100%;
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+/* Textura sutil en el fondo de cada slide */
+.slide::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image:
+        radial-gradient(ellipse 80% 60% at 100% 0%, rgba(108, 180, 238, 0.10) 0%, transparent 55%),
+        radial-gradient(ellipse 60% 50% at 0% 100%, rgba(77, 143, 213, 0.07) 0%, transparent 55%);
+    pointer-events: none;
+    z-index: 0;
+}
+
+.slide > * { position: relative; z-index: 1; }
+
+/* === MARCAS DE PIE/CABECERA === */
+.slide-meta {
+    position: absolute;
+    top: clamp(1rem, 2.5vw, 2rem);
+    left: var(--slide-padding);
+    right: var(--slide-padding);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-family: var(--font-mono);
+    font-size: clamp(0.55rem, 0.85vw, 0.75rem);
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    z-index: 5;
+}
+
+.slide-meta .num { color: var(--accent-warm); font-weight: 500; }
+
+.slide-footer {
+    position: absolute;
+    bottom: clamp(1rem, 2vw, 1.5rem);
+    left: var(--slide-padding);
+    right: var(--slide-padding);
+    display: flex;
+    justify-content: space-between;
+    font-family: var(--font-mono);
+    font-size: clamp(0.55rem, 0.8vw, 0.7rem);
+    color: var(--text-muted);
+    letter-spacing: 0.1em;
+    z-index: 5;
+}
+
+/* === TIPOGRAFÍA === */
+h1, h2, h3 {
+    font-family: var(--font-display);
+    font-weight: 500;
+    line-height: 1.05;
+    letter-spacing: -0.01em;
+}
+
+h1 {
+    font-size: var(--title-size);
+    font-weight: 400;
+}
+
+h1 em {
+    font-style: italic;
+    color: var(--accent-warm);
+    font-weight: 500;
+}
+
+h2 {
+    font-size: var(--h2-size);
+    margin-bottom: clamp(0.3rem, 0.8vw, 0.8rem);
+}
+
+h3 {
+    font-size: var(--h3-size);
+    margin-bottom: clamp(0.2rem, 0.5vw, 0.5rem);
+}
+
+.eyebrow {
+    font-family: var(--font-mono);
+    font-size: clamp(0.6rem, 0.9vw, 0.8rem);
+    color: var(--accent-warm);
+    text-transform: uppercase;
+    letter-spacing: 0.25em;
+    margin-bottom: clamp(0.5rem, 1.2vw, 1rem);
+    font-weight: 500;
+}
+
+.divider {
+    width: clamp(40px, 4vw, 60px);
+    height: 1px;
+    background: var(--accent-warm);
+    margin: clamp(0.5rem, 1.2vw, 1rem) 0;
+}
+
+p { font-size: var(--body-size); color: var(--text-secondary); }
+strong { color: var(--text-primary); font-weight: 600; }
+.mono { font-family: var(--font-mono); font-size: var(--mono-size); }
+.warm { color: var(--accent-warm); }
+.coral { color: var(--accent-coral); }
+.sage { color: var(--accent-sage); }
+
+/* === ANIMACIONES === */
+.reveal {
+    opacity: 0;
+    transform: translateY(24px);
+    transition:
+        opacity var(--duration-normal) var(--ease-out-expo),
+        transform var(--duration-normal) var(--ease-out-expo);
+}
+
+.slide.visible .reveal { opacity: 1; transform: translateY(0); }
+
+.reveal:nth-child(1) { transition-delay: 0.05s; }
+.reveal:nth-child(2) { transition-delay: 0.15s; }
+.reveal:nth-child(3) { transition-delay: 0.25s; }
+.reveal:nth-child(4) { transition-delay: 0.35s; }
+.reveal:nth-child(5) { transition-delay: 0.45s; }
+.reveal:nth-child(6) { transition-delay: 0.55s; }
+.reveal:nth-child(7) { transition-delay: 0.65s; }
+
+/* === PROGRESS BAR === */
+.progress-bar {
+    position: fixed;
+    top: 0; left: 0;
+    height: 2px;
+    background: var(--accent-warm);
+    z-index: 100;
+    width: 0%;
+    transition: width 0.2s ease;
+}
+
+/* === NAV DOTS === */
+.nav-dots {
+    position: fixed;
+    right: clamp(0.75rem, 1.5vw, 1.5rem);
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    z-index: 50;
+}
+
+.nav-dots button {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    border: 1px solid var(--text-muted);
+    background: transparent;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    padding: 0;
+}
+
+.nav-dots button.active {
+    background: var(--accent-warm);
+    border-color: var(--accent-warm);
+    transform: scale(1.4);
+}
+
+/* ===========================================
+   SLIDE 1 — PORTADA
+   =========================================== */
+.cover {
+    background:
+        radial-gradient(ellipse 90% 70% at 70% 30%, rgba(108, 180, 238, 0.18) 0%, transparent 60%),
+        radial-gradient(ellipse 70% 60% at 20% 90%, rgba(77, 143, 213, 0.12) 0%, transparent 60%),
+        radial-gradient(ellipse 60% 50% at 90% 100%, rgba(26, 43, 71, 0.6) 0%, transparent 70%),
+        var(--bg-primary);
+}
+
+.cover .slide-content {
+    justify-content: space-between;
+    padding-top: clamp(2rem, 5vw, 4rem);
+    padding-bottom: clamp(2rem, 5vw, 4rem);
+}
+
+.cover-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    font-family: var(--font-mono);
+    font-size: clamp(0.65rem, 1vw, 0.85rem);
+    color: var(--text-muted);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+}
+
+.cover-top .label-strong { color: var(--accent-warm); }
+
+.cover-center { max-width: 1100px; }
+
+.cover h1 {
+    font-size: clamp(2.5rem, 8vw, 7rem);
+    line-height: 0.95;
+    font-weight: 400;
+    margin-bottom: clamp(1rem, 2vw, 1.5rem);
+}
+
+.cover .subtitle {
+    font-family: var(--font-body);
+    font-size: clamp(0.9rem, 1.5vw, 1.3rem);
+    color: var(--text-secondary);
+    font-weight: 300;
+    max-width: 600px;
+    line-height: 1.5;
+}
+
+.cover-bottom {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: clamp(1rem, 3vw, 3rem);
+    padding-top: clamp(1rem, 2vw, 2rem);
+    border-top: 1px solid var(--line-strong);
+}
+
+.cover-bottom .item .lbl {
+    font-family: var(--font-mono);
+    font-size: clamp(0.55rem, 0.8vw, 0.7rem);
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.2em;
+    margin-bottom: 4px;
+}
+
+.cover-bottom .item .val {
+    font-family: var(--font-display);
+    font-size: clamp(0.95rem, 1.4vw, 1.3rem);
+    color: var(--text-primary);
+    font-style: italic;
+}
+
+/* Decoración: círculos abstractos */
+.orb {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(60px);
+    opacity: 0.5;
+    pointer-events: none;
+}
+.cover .orb-1 {
+    width: 420px; height: 420px;
+    background: var(--accent-warm);
+    top: -120px; right: -120px;
+    opacity: 0.22;
+}
+.cover .orb-2 {
+    width: 320px; height: 320px;
+    background: var(--accent-deep);
+    bottom: 60px; left: -100px;
+    opacity: 0.20;
+}
+
+/* ===========================================
+   SLIDE 2 — ÍNDICE
+   =========================================== */
+.toc {
+    display: grid;
+    grid-template-columns: 1fr 1.4fr;
+    gap: clamp(2rem, 5vw, 5rem);
+    align-items: center;
+    height: 100%;
+}
+
+.toc-list {
+    display: flex;
+    flex-direction: column;
+    gap: clamp(0.4rem, 1vw, 0.8rem);
+}
+
+.toc-item {
+    display: grid;
+    grid-template-columns: clamp(40px, 5vw, 65px) 1fr auto;
+    align-items: baseline;
+    padding: clamp(0.6rem, 1.2vw, 1rem) 0;
+    border-bottom: 1px solid var(--line);
+    transition: padding 0.3s ease;
+}
+
+.toc-item:hover { padding-left: 8px; }
+
+.toc-item .n {
+    font-family: var(--font-mono);
+    font-size: clamp(0.65rem, 0.95vw, 0.85rem);
+    color: var(--accent-warm);
+    letter-spacing: 0.15em;
+}
+
+.toc-item .t {
+    font-family: var(--font-display);
+    font-size: clamp(1.05rem, 1.8vw, 1.7rem);
+    color: var(--text-primary);
+    font-weight: 400;
+}
+
+.toc-item .pages {
+    font-family: var(--font-mono);
+    font-size: clamp(0.55rem, 0.8vw, 0.7rem);
+    color: var(--text-muted);
+    letter-spacing: 0.1em;
+}
+
+/* ===========================================
+   SLIDE — Layout estándar
+   =========================================== */
+.std-header {
+    margin-bottom: clamp(1rem, 2.5vw, 2rem);
+}
+
+.two-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: clamp(1.5rem, 3vw, 3rem);
+    align-items: start;
+}
+
+.col h3 { color: var(--text-primary); margin-bottom: 0.5rem; }
+.col p { color: var(--text-secondary); }
+
+/* ===========================================
+   PIPELINE (slide 5)
+   =========================================== */
+.pipeline {
+    display: flex;
+    align-items: stretch;
+    justify-content: space-between;
+    gap: clamp(0.3rem, 0.6vw, 0.6rem);
+    margin-top: clamp(1rem, 2vw, 2rem);
+}
+
+.step {
+    flex: 1;
+    background: var(--bg-card);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    padding: clamp(0.7rem, 1.2vw, 1.1rem) clamp(0.4rem, 0.8vw, 0.7rem);
+    text-align: center;
+    position: relative;
+    transition: all 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    gap: clamp(0.3rem, 0.7vw, 0.6rem);
+}
+
+.step:hover {
+    background: var(--bg-elevated);
+    border-color: var(--accent-warm);
+    transform: translateY(-4px);
+}
+
+.step .step-n {
+    font-family: var(--font-mono);
+    font-size: clamp(0.6rem, 0.9vw, 0.75rem);
+    color: var(--accent-warm);
+    letter-spacing: 0.2em;
+}
+
+.step .step-icon {
+    width: clamp(34px, 4vw, 48px);
+    height: clamp(34px, 4vw, 48px);
+    border: 1px solid var(--accent-warm);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--accent-warm);
+}
+
+.step .step-icon svg {
+    width: 60%; height: 60%;
+    stroke: var(--accent-warm);
+    fill: none;
+    stroke-width: 1.5;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.step .step-name {
+    font-family: var(--font-display);
+    font-size: clamp(0.7rem, 1vw, 0.95rem);
+    color: var(--text-primary);
+    line-height: 1.15;
+    font-weight: 500;
+}
+
+.step + .step::before {
+    content: "";
+    position: absolute;
+    left: calc(-1 * clamp(0.3rem, 0.6vw, 0.6rem));
+    top: 50%;
+    width: clamp(0.3rem, 0.6vw, 0.6rem);
+    height: 1px;
+    background: var(--line-strong);
+}
+
+.pipeline-note {
+    margin-top: clamp(1rem, 2vw, 1.5rem);
+    font-size: var(--small-size);
+    color: var(--text-muted);
+    font-style: italic;
+    text-align: center;
+}
+
+/* ===========================================
+   MÓDULO LAYOUT (slides 6-12)
+   =========================================== */
+.module {
+    display: grid;
+    grid-template-columns: 1.2fr 1fr;
+    gap: clamp(1.5rem, 3vw, 3rem);
+    align-items: start;
+    margin-top: clamp(0.8rem, 1.5vw, 1.5rem);
+}
+
+.module-diagram {
+    background: var(--bg-card);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: clamp(1rem, 2vw, 1.8rem);
+    position: relative;
+}
+
+.io-block {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: clamp(0.5rem, 1vw, 0.9rem);
+    align-items: start;
+    padding: clamp(0.5rem, 1vw, 0.8rem) 0;
+}
+
+.io-block + .io-block { border-top: 1px solid var(--line); }
+
+.io-tag {
+    font-family: var(--font-mono);
+    font-size: clamp(0.55rem, 0.8vw, 0.7rem);
+    color: var(--accent-warm);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    padding: clamp(0.2rem, 0.5vw, 0.35rem) clamp(0.4rem, 0.7vw, 0.6rem);
+    border: 1px solid var(--accent-warm);
+    border-radius: 3px;
+    white-space: nowrap;
+}
+
+.io-tag.in { color: var(--accent-sage); border-color: var(--accent-sage); }
+.io-tag.out { color: var(--accent-coral); border-color: var(--accent-coral); }
+
+.io-content {
+    font-size: var(--small-size);
+    color: var(--text-secondary);
+    line-height: 1.5;
+}
+
+.io-content .code {
+    font-family: var(--font-mono);
+    color: var(--text-primary);
+    background: var(--bg-elevated);
+    padding: 1px 6px;
+    border-radius: 3px;
+    font-size: 0.92em;
+}
+
+.module-detail h3 {
+    margin-bottom: clamp(0.5rem, 1vw, 0.8rem);
+}
+
+.module-detail .meta-line {
+    font-family: var(--font-mono);
+    font-size: clamp(0.6rem, 0.85vw, 0.75rem);
+    color: var(--text-muted);
+    letter-spacing: 0.12em;
+    margin-bottom: clamp(0.8rem, 1.5vw, 1.2rem);
+    display: flex;
+    gap: clamp(0.5rem, 1vw, 1rem);
+    flex-wrap: wrap;
+}
+
+.module-detail .meta-line span {
+    color: var(--accent-warm);
+}
+
+.feature-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: clamp(0.4rem, 0.9vw, 0.7rem);
+}
+
+.feature-list li {
+    font-size: var(--small-size);
+    color: var(--text-secondary);
+    line-height: 1.5;
+    padding-left: clamp(0.8rem, 1.5vw, 1.2rem);
+    position: relative;
+}
+
+.feature-list li::before {
+    content: "—";
+    position: absolute;
+    left: 0;
+    color: var(--accent-warm);
+}
+
+.feature-list li strong {
+    color: var(--text-primary);
+    font-weight: 500;
+}
+
+/* ===========================================
+   VISTAS A-D (slide 8)
+   =========================================== */
+.views-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: clamp(0.5rem, 1.2vw, 1rem);
+    margin-top: clamp(0.8rem, 1.5vw, 1.5rem);
+}
+
+.view-card {
+    background: var(--bg-card);
+    border: 1px solid var(--line);
+    border-left: 3px solid var(--accent-warm);
+    border-radius: 4px;
+    padding: clamp(0.7rem, 1.4vw, 1.2rem);
+    display: flex;
+    flex-direction: column;
+    gap: clamp(0.3rem, 0.7vw, 0.5rem);
+}
+
+.view-card:nth-child(2) { border-left-color: var(--accent-coral); }
+.view-card:nth-child(3) { border-left-color: var(--accent-sage); }
+.view-card:nth-child(4) { border-left-color: var(--accent-rose); }
+
+.view-card .tag {
+    font-family: var(--font-mono);
+    font-size: clamp(0.55rem, 0.78vw, 0.7rem);
+    color: var(--text-muted);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+}
+
+.view-card h4 {
+    font-family: var(--font-display);
+    font-size: clamp(0.95rem, 1.5vw, 1.3rem);
+    color: var(--text-primary);
+    font-weight: 500;
+    line-height: 1.1;
+}
+
+.view-card .dim {
+    font-family: var(--font-mono);
+    font-size: clamp(0.6rem, 0.85vw, 0.78rem);
+    color: var(--accent-warm);
+    margin-top: auto;
+    padding-top: clamp(0.4rem, 0.9vw, 0.7rem);
+    border-top: 1px solid var(--line);
+}
+
+.view-card p {
+    font-size: clamp(0.65rem, 0.95vw, 0.82rem);
+    color: var(--text-secondary);
+    line-height: 1.45;
+}
+
+/* ===========================================
+   TABLA DE RESULTADOS (slides 15-16)
+   =========================================== */
+.results-grid {
+    display: grid;
+    grid-template-columns: 1.2fr 1fr;
+    gap: clamp(1.5rem, 3vw, 3rem);
+    align-items: stretch;
+    margin-top: clamp(0.8rem, 1.5vw, 1.5rem);
+}
+
+.table-wrap {
+    background: var(--bg-card);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.table-wrap table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: var(--font-mono);
+    font-size: clamp(0.7rem, 1vw, 0.9rem);
+}
+
+.table-wrap th {
+    text-align: left;
+    padding: clamp(0.6rem, 1.2vw, 1rem) clamp(0.8rem, 1.5vw, 1.3rem);
+    background: var(--bg-elevated);
+    color: var(--text-muted);
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    font-size: clamp(0.55rem, 0.8vw, 0.7rem);
+    border-bottom: 1px solid var(--line-strong);
+}
+
+.table-wrap td {
+    padding: clamp(0.55rem, 1.1vw, 0.9rem) clamp(0.8rem, 1.5vw, 1.3rem);
+    border-top: 1px solid var(--line);
+    color: var(--text-primary);
+}
+
+.table-wrap tr:first-child td { border-top: none; }
+
+.table-wrap tr.winner {
+    background: rgba(108, 180, 238, 0.10);
+}
+
+.table-wrap tr.winner td {
+    color: var(--accent-warm);
+}
+
+.table-wrap tr.winner td::after {
+    content: " ★";
+    color: var(--accent-warm);
+}
+
+.table-wrap tr.winner td:not(:last-child)::after { content: ""; }
+
+/* === MÉTRICAS GRANDES === */
+.metric-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: clamp(0.6rem, 1.3vw, 1rem);
+}
+
+.metric {
+    background: var(--bg-card);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: clamp(0.8rem, 1.5vw, 1.3rem);
+    display: flex;
+    flex-direction: column;
+    gap: clamp(0.2rem, 0.5vw, 0.4rem);
+}
+
+.metric .label {
+    font-family: var(--font-mono);
+    font-size: clamp(0.55rem, 0.8vw, 0.7rem);
+    color: var(--text-muted);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+}
+
+.metric .value {
+    font-family: var(--font-display);
+    font-size: clamp(1.4rem, 3.2vw, 2.8rem);
+    color: var(--accent-warm);
+    font-weight: 500;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+}
+
+.metric .sub {
+    font-size: clamp(0.6rem, 0.85vw, 0.75rem);
+    color: var(--text-secondary);
+}
+
+.metric.primary {
+    border-left: 3px solid var(--accent-warm);
+    background: linear-gradient(135deg, rgba(108, 180, 238, 0.12), transparent 60%);
+}
+
+.metric.primary .value { color: var(--accent-warm); }
+.metric.sage .value { color: var(--accent-sage); }
+.metric.coral .value { color: var(--accent-coral); }
+
+/* === MATRIZ DE CONFUSIÓN === */
+.confusion {
+    display: grid;
+    grid-template-columns: auto repeat(2, 1fr);
+    grid-template-rows: auto repeat(2, 1fr);
+    gap: 0;
+    background: var(--bg-card);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    overflow: hidden;
+    aspect-ratio: 1.4;
+    max-height: 320px;
+}
+
+.confusion .cell {
+    padding: clamp(0.5rem, 1.2vw, 1rem);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    border: 1px solid var(--line);
+    text-align: center;
+}
+
+.confusion .cell.head {
+    background: var(--bg-elevated);
+    font-family: var(--font-mono);
+    font-size: clamp(0.55rem, 0.8vw, 0.7rem);
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+}
+
+.confusion .cell.tp,
+.confusion .cell.tn {
+    background: rgba(129, 166, 132, 0.1);
+}
+.confusion .cell.fp,
+.confusion .cell.fn {
+    background: rgba(224, 122, 95, 0.08);
+}
+
+.confusion .cell .big {
+    font-family: var(--font-display);
+    font-size: clamp(1.3rem, 2.8vw, 2.4rem);
+    color: var(--text-primary);
+    line-height: 1;
+    font-weight: 500;
+}
+
+.confusion .cell.tp .big,
+.confusion .cell.tn .big { color: var(--accent-sage); }
+.confusion .cell.fp .big,
+.confusion .cell.fn .big { color: var(--accent-coral); }
+
+.confusion .cell .lbl {
+    font-family: var(--font-mono);
+    font-size: clamp(0.55rem, 0.78vw, 0.7rem);
+    color: var(--text-muted);
+    margin-top: 4px;
+    letter-spacing: 0.1em;
+}
+
+/* === IMÁGENES (ROC, importancia) === */
+.figure {
+    background: var(--bg-card);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: clamp(0.8rem, 1.5vw, 1.3rem);
+    display: flex;
+    flex-direction: column;
+    gap: clamp(0.4rem, 0.9vw, 0.7rem);
+}
+
+.figure-image {
+    background: #f5f3ee;
+    border-radius: 4px;
+    padding: clamp(0.4rem, 0.8vw, 0.7rem);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+    flex: 1;
+    min-height: 0;
+}
+
+.figure-image img {
+    max-width: 100%;
+    max-height: min(50vh, 380px);
+    object-fit: contain;
+}
+
+.figure-caption {
+    font-family: var(--font-mono);
+    font-size: clamp(0.55rem, 0.8vw, 0.7rem);
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    text-align: left;
+}
+
+.figure-caption strong {
+    color: var(--accent-warm);
+}
+
+/* === Reporte de clasificación tabla pequeña === */
+.class-report {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: var(--font-mono);
+    font-size: clamp(0.6rem, 0.9vw, 0.8rem);
+    background: var(--bg-card);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.class-report th,
+.class-report td {
+    padding: clamp(0.4rem, 0.9vw, 0.7rem) clamp(0.5rem, 1vw, 0.9rem);
+    text-align: right;
+    border-top: 1px solid var(--line);
+    color: var(--text-primary);
+}
+
+.class-report th {
+    background: var(--bg-elevated);
+    color: var(--text-muted);
+    font-size: clamp(0.5rem, 0.75vw, 0.65rem);
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    font-weight: 500;
+    border-top: none;
+}
+
+.class-report th:first-child,
+.class-report td:first-child {
+    text-align: left;
+    color: var(--text-secondary);
+}
+
+/* === LISTA DE REFERENCIAS / DEPS === */
+.dep-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: clamp(0.6rem, 1.3vw, 1rem);
+    margin-top: clamp(0.8rem, 1.5vw, 1.5rem);
+}
+
+.dep-card {
+    background: var(--bg-card);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: clamp(0.8rem, 1.5vw, 1.3rem);
+    display: flex;
+    flex-direction: column;
+    gap: clamp(0.3rem, 0.7vw, 0.5rem);
+    position: relative;
+    overflow: hidden;
+}
+
+.dep-card::before {
+    content: "";
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 3px;
+    background: var(--accent-warm);
+}
+
+.dep-card:nth-child(2)::before { background: var(--accent-coral); }
+.dep-card:nth-child(3)::before { background: var(--accent-sage); }
+.dep-card:nth-child(4)::before { background: var(--accent-rose); }
+
+.dep-card .role {
+    font-family: var(--font-mono);
+    font-size: clamp(0.55rem, 0.78vw, 0.7rem);
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+}
+
+.dep-card h4 {
+    font-family: var(--font-display);
+    font-size: clamp(0.95rem, 1.4vw, 1.25rem);
+    color: var(--text-primary);
+    font-weight: 500;
+}
+
+.dep-card h4 .pkg {
+    font-family: var(--font-mono);
+    font-size: 0.75em;
+    color: var(--accent-warm);
+    font-weight: 400;
+    margin-left: 0.5em;
+}
+
+.dep-card p {
+    font-size: clamp(0.65rem, 0.95vw, 0.82rem);
+    line-height: 1.5;
+}
+
+/* === JUSTIFICACIÓN === */
+.just-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 1fr 1fr;
+    gap: clamp(0.6rem, 1.2vw, 1rem);
+    margin-top: clamp(0.8rem, 1.5vw, 1.5rem);
+}
+
+.just-card {
+    background: var(--bg-card);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: clamp(0.8rem, 1.5vw, 1.3rem);
+    display: flex;
+    flex-direction: column;
+    gap: clamp(0.3rem, 0.7vw, 0.55rem);
+}
+
+.just-card .n {
+    font-family: var(--font-mono);
+    font-size: clamp(0.7rem, 1vw, 0.85rem);
+    color: var(--accent-warm);
+    letter-spacing: 0.15em;
+}
+
+.just-card h4 {
+    font-family: var(--font-display);
+    font-size: clamp(0.95rem, 1.4vw, 1.2rem);
+    color: var(--text-primary);
+    font-weight: 500;
+    line-height: 1.2;
+}
+
+.just-card p {
+    font-size: clamp(0.65rem, 0.93vw, 0.8rem);
+    line-height: 1.5;
+}
+
+.just-card .cite {
+    font-family: var(--font-mono);
+    font-size: clamp(0.55rem, 0.78vw, 0.7rem);
+    color: var(--text-muted);
+    margin-top: auto;
+    padding-top: clamp(0.3rem, 0.7vw, 0.5rem);
+    border-top: 1px solid var(--line);
+    font-style: italic;
+}
+
+/* === OPTIMIZACIONES === */
+.opt-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: clamp(1rem, 2.2vw, 2rem);
+    margin-top: clamp(0.8rem, 1.5vw, 1.5rem);
+    align-items: start;
+}
+
+.opt-stat-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: clamp(0.5rem, 1vw, 0.8rem);
+    margin-bottom: clamp(0.8rem, 1.5vw, 1.2rem);
+}
+
+.opt-stat {
+    background: var(--bg-card);
+    border: 1px solid var(--line);
+    border-radius: 5px;
+    padding: clamp(0.6rem, 1.2vw, 1rem);
+    text-align: center;
+}
+
+.opt-stat .n {
+    font-family: var(--font-display);
+    font-size: clamp(1.4rem, 3vw, 2.6rem);
+    color: var(--accent-warm);
+    line-height: 1;
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+}
+
+.opt-stat .l {
+    font-family: var(--font-mono);
+    font-size: clamp(0.5rem, 0.75vw, 0.65rem);
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    margin-top: 4px;
+}
+
+.opt-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: clamp(0.6rem, 0.88vw, 0.78rem);
+    background: var(--bg-card);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.opt-table th {
+    background: var(--bg-elevated);
+    text-align: left;
+    padding: clamp(0.5rem, 1vw, 0.8rem);
+    color: var(--text-muted);
+    font-family: var(--font-mono);
+    font-size: clamp(0.5rem, 0.72vw, 0.65rem);
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    font-weight: 500;
+}
+
+.opt-table td {
+    padding: clamp(0.45rem, 0.9vw, 0.7rem) clamp(0.5rem, 1vw, 0.8rem);
+    border-top: 1px solid var(--line);
+    color: var(--text-secondary);
+    vertical-align: top;
+}
+
+.opt-table td:first-child {
+    font-family: var(--font-mono);
+    color: var(--accent-warm);
+    white-space: nowrap;
+}
+
+/* === CONSIDERACIONES / CIERRE === */
+.consid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: clamp(1rem, 2.5vw, 2.5rem);
+    margin-top: clamp(1rem, 2vw, 1.8rem);
+}
+
+.consid-col {
+    background: var(--bg-card);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: clamp(1rem, 2vw, 1.6rem);
+    border-top: 3px solid var(--accent-warm);
+    display: flex;
+    flex-direction: column;
+    gap: clamp(0.5rem, 1vw, 0.8rem);
+}
+
+.consid-col:nth-child(2) { border-top-color: var(--accent-coral); }
+
+.consid-col h3 {
+    font-size: clamp(1.1rem, 1.8vw, 1.6rem);
+    color: var(--text-primary);
+}
+
+.consid-col .tag {
+    font-family: var(--font-mono);
+    font-size: clamp(0.55rem, 0.8vw, 0.7rem);
+    color: var(--accent-warm);
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+}
+
+.consid-col p {
+    font-size: clamp(0.7rem, 1vw, 0.88rem);
+}
+
+/* === HINT === */
+.keyboard-hint {
+    position: fixed;
+    bottom: clamp(0.6rem, 1.5vw, 1.2rem);
+    right: clamp(0.6rem, 1.5vw, 1.2rem);
+    font-family: var(--font-mono);
+    font-size: clamp(0.55rem, 0.8vw, 0.7rem);
+    color: var(--text-muted);
+    letter-spacing: 0.1em;
+    z-index: 50;
+    background: var(--bg-secondary);
+    padding: 6px 10px;
+    border-radius: 3px;
+    border: 1px solid var(--line);
+    opacity: 0.7;
+}
+
+/* === RESPONSIVE === */
+@media (max-height: 700px) {
+    :root {
+        --slide-padding: clamp(1rem, 3vw, 2.5rem);
+    }
+    .module { grid-template-columns: 1fr; gap: 1rem; }
+    .results-grid { grid-template-columns: 1fr; }
+    .opt-grid { grid-template-columns: 1fr; }
+}
+
+@media (max-height: 600px) {
+    .nav-dots, .keyboard-hint { display: none; }
+    .views-grid { grid-template-columns: repeat(2, 1fr); }
+    .dep-grid { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 800px) {
+    .toc { grid-template-columns: 1fr; }
+    .two-col, .module, .results-grid, .opt-grid, .consid { grid-template-columns: 1fr; }
+    .views-grid { grid-template-columns: repeat(2, 1fr); }
+    .pipeline { flex-wrap: wrap; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        transition-duration: 0.2s !important;
+    }
+    html { scroll-behavior: auto; }
+}
+</style>
+</head>
+<body>
+
+<!-- Barra de progreso -->
+<div class="progress-bar"></div>
+<!-- Dots de navegación (generadas por JS) -->
+<nav class="nav-dots" aria-label="Slide navigation"></nav>
+<!-- Hint -->
+<div class="keyboard-hint">← → SPACE</div>
+
+<!-- ===========================================
+     SLIDE 1 — PORTADA
+     =========================================== -->
+<section class="slide cover" id="slide-1">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="slide-content">
+        <div class="cover-top reveal">
+            <span><span class="label-strong">FASE 2-B</span> · Implementación &amp; Resultados</span>
+            <span>EQUIPO 8 · 2026</span>
+        </div>
+
+        <div class="cover-center">
+            <p class="eyebrow reveal">Detección automática de trastornos alimentarios</p>
+            <h1 class="reveal">
+                Detección Digital<br/>
+                de <em>Anorexia</em><br/>
+                en redes sociales
+            </h1>
+            <p class="subtitle reveal">
+                Fusión tardía de vistas <em>léxica</em>, <em>emocional</em>, <em>estilística</em>
+                y de <em>dominio clínico</em> sobre publicaciones de redes sociales —
+                evaluada bajo el Protocolo de la Fase 2-B.
+            </p>
+        </div>
+
+        <div class="cover-bottom reveal">
+            <div class="item">
+                <div class="lbl">AUC sobre test oficial</div>
+                <div class="val">0.9214</div>
+            </div>
+            <div class="item">
+                <div class="lbl">Modelo ganador</div>
+                <div class="val">LogReg · CV 0.9558</div>
+            </div>
+            <div class="item">
+                <div class="lbl">Cobertura de pruebas</div>
+                <div class="val">143 tests unitarios</div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ===========================================
+     SLIDE 2 — ÍNDICE
+     =========================================== -->
+<section class="slide" id="slide-2">
+    <div class="slide-meta">
+        <span><span class="num">00</span> · Índice</span>
+        <span>02 / 19</span>
+    </div>
+    <div class="slide-content">
+        <div class="toc">
+            <div class="reveal">
+                <p class="eyebrow">Contenido</p>
+                <h1>Ruta de la presentación</h1>
+                <div class="divider"></div>
+                <p style="max-width: 320px; margin-top: 1rem;">
+                    Diseño, pipeline, resultados empíricos del Protocolo y consideraciones
+                    para la transición a Fase 3.
+                </p>
+            </div>
+            <div class="toc-list reveal">
+                <div class="toc-item"><span class="n">01</span><span class="t">Objetivo</span><span class="pages">p. 03</span></div>
+                <div class="toc-item"><span class="n">02</span><span class="t">Diseño y marco teórico</span><span class="pages">p. 04</span></div>
+                <div class="toc-item"><span class="n">03</span><span class="t">Pipeline modular</span><span class="pages">p. 05–12</span></div>
+                <div class="toc-item"><span class="n">04</span><span class="t">Dependencias externas</span><span class="pages">p. 13</span></div>
+                <div class="toc-item"><span class="n">05</span><span class="t">Justificación metodológica</span><span class="pages">p. 14</span></div>
+                <div class="toc-item"><span class="n">06</span><span class="t">Resultados del Protocolo</span><span class="pages">p. 15–18</span></div>
+                <div class="toc-item"><span class="n">07</span><span class="t">Optimizaciones &amp; pruebas</span><span class="pages">p. 19</span></div>
+                <div class="toc-item"><span class="n">08</span><span class="t">Consideraciones &amp; Fase 3</span><span class="pages">p. 20</span></div>
+            </div>
+        </div>
+    </div>
+    <div class="slide-footer">
+        <span>DETECCIÓN DIGITAL · ANOREXIA</span>
+        <span>EQUIPO 8</span>
+    </div>
+</section>
+
+<!-- ===========================================
+     SLIDE 3 — OBJETIVO
+     =========================================== -->
+<section class="slide" id="slide-3">
+    <div class="slide-meta">
+        <span><span class="num">01</span> · Objetivo</span>
+        <span>03 / 19</span>
+    </div>
+    <div class="slide-content">
+        <p class="eyebrow reveal">Sección 1</p>
+        <h1 class="reveal" style="max-width: 1100px;">
+            Una herramienta capaz de <em>leer</em> publicaciones
+            y emitir un <em>dictamen clínico</em>.
+        </h1>
+        <div class="divider reveal"></div>
+        <div class="two-col reveal" style="margin-top: clamp(1rem, 2vw, 2rem);">
+            <div class="col">
+                <h3>Entrada</h3>
+                <p>
+                    Publicaciones textuales en español obtenidas de redes sociales
+                    (Twitter / Reddit) según el formato del Protocolo.
+                </p>
+            </div>
+            <div class="col">
+                <h3>Salida</h3>
+                <p>
+                    Dictamen binario <span class="mono warm">{0,&nbsp;1}</span>
+                    acompañado de una probabilidad calibrada que indica la presencia
+                    de señales compatibles con anorexia.
+                </p>
+            </div>
+        </div>
+    </div>
+    <div class="slide-footer">
+        <span>OBJETIVO</span>
+        <span>03</span>
+    </div>
+</section>
+
+<!-- ===========================================
+     SLIDE 4 — DISEÑO
+     =========================================== -->
+<section class="slide" id="slide-4">
+    <div class="slide-meta">
+        <span><span class="num">02</span> · Diseño</span>
+        <span>04 / 19</span>
+    </div>
+    <div class="slide-content">
+        <div class="std-header reveal">
+            <p class="eyebrow">Sección 2</p>
+            <h1>Una arquitectura <em>multi-vista</em> con fusión tardía</h1>
+            <div class="divider"></div>
+        </div>
+        <div class="just-grid reveal" style="grid-template-rows: 1fr;">
+            <div class="just-card">
+                <span class="n">BASE</span>
+                <h4>Revisión Fase 1</h4>
+                <p>Los pipelines clásicos multi-vista reportan <strong class="warm">F1 ≈ 0.80–0.84</strong> en eRisk 2018, comparables a transformers a un costo de cómputo significativamente menor.</p>
+                <span class="cite">Aragón et al., 2023 · Villa-Pérez et al., 2023</span>
+            </div>
+            <div class="just-card">
+                <span class="n">ORIENTACIÓN</span>
+                <h4>Referentes arquitectónicos</h4>
+                <p>Tomamos como guía la fusión léxica + emocional + estilística + dominio descrita por la literatura del estado del arte hispanohablante.</p>
+                <span class="cite">Aguilera 2021 · Ramírez-Cifuentes 2020</span>
+            </div>
+            <div class="just-card">
+                <span class="n">RESULTADO</span>
+                <h4>Fusión tardía + clasificador lineal</h4>
+                <p>Concatenación horizontal de cuatro vistas alimentadas a un <strong>FeatureUnion</strong> y una <strong>LogReg</strong> regularizada como decisor final.</p>
+                <span class="cite">Decisión arquitectónica final</span>
+            </div>
+            <div class="just-card">
+                <span class="n">VALIDACIÓN</span>
+                <h4>0.9214 AUC sobre test oficial</h4>
+                <p>Evaluación honesta sobre <span class="mono">data_test_fold1.csv</span>; la LogReg sobre vistas fusionadas supera al resto del grid en CV 5-fold (0.9558) y generaliza al conjunto del Protocolo.</p>
+                <span class="cite">Ver sección de Resultados</span>
+            </div>
+        </div>
+    </div>
+    <div class="slide-footer">
+        <span>DISEÑO</span>
+        <span>04</span>
+    </div>
+</section>
+
+<!-- ===========================================
+     SLIDE 5 — PIPELINE OVERVIEW
+     =========================================== -->
+<section class="slide" id="slide-5">
+    <div class="slide-meta">
+        <span><span class="num">03</span> · Proceso</span>
+        <span>05 / 19</span>
+    </div>
+    <div class="slide-content">
+        <div class="std-header reveal">
+            <p class="eyebrow">Sección 3</p>
+            <h1>Pipeline en <em>siete etapas</em></h1>
+            <div class="divider"></div>
+        </div>
+        <div class="pipeline reveal">
+            <!-- Cada step tiene icono SVG inline para mantener zero-dependency -->
+            <div class="step">
+                <span class="step-n">01</span>
+                <div class="step-icon"><svg viewBox="0 0 24 24"><path d="M3 4h18M3 12h18M3 20h18"/></svg></div>
+                <span class="step-name">Ingesta</span>
+            </div>
+            <div class="step">
+                <span class="step-n">02</span>
+                <div class="step-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 010 18M12 3a14 14 0 000 18"/></svg></div>
+                <span class="step-name">Preprocesamiento</span>
+            </div>
+            <div class="step">
+                <span class="step-n">03</span>
+                <div class="step-icon"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg></div>
+                <span class="step-name">Extracción Multi-Vista</span>
+            </div>
+            <div class="step">
+                <span class="step-n">04</span>
+                <div class="step-icon"><svg viewBox="0 0 24 24"><path d="M4 4h6l4 8 6-8M4 20h16"/></svg></div>
+                <span class="step-name">Fusión &amp; reducción</span>
+            </div>
+            <div class="step">
+                <span class="step-n">05</span>
+                <div class="step-icon"><svg viewBox="0 0 24 24"><path d="M12 2v20M2 12h20M5 5l14 14M19 5L5 19"/></svg></div>
+                <span class="step-name">Clasificación</span>
+            </div>
+            <div class="step">
+                <span class="step-n">06</span>
+                <div class="step-icon"><svg viewBox="0 0 24 24"><path d="M3 3v18h18M7 14l3-3 4 4 5-6"/></svg></div>
+                <span class="step-name">Evaluación</span>
+            </div>
+            <div class="step">
+                <span class="step-n">07</span>
+                <div class="step-icon"><svg viewBox="0 0 24 24"><path d="M21 8v13H3V8M1 3h22v5H1zM10 12h4"/></svg></div>
+                <span class="step-name">Predicción &amp; Serialización</span>
+            </div>
+        </div>
+        <p class="pipeline-note reveal">
+            Flujo lineal con bifurcación controlada en la etapa 03 — las cuatro vistas se calculan en paralelo y se reunifican en la 04.
+        </p>
+    </div>
+    <div class="slide-footer">
+        <span>PROCESO · OVERVIEW</span>
+        <span>05</span>
+    </div>
+</section>
+
+<!-- ===========================================
+     SLIDE 6 — MÓDULO 3.1: INGESTA
+     =========================================== -->
+<section class="slide" id="slide-6">
+    <div class="slide-meta">
+        <span><span class="num">03.1</span> · Ingesta</span>
+        <span>06 / 19</span>
+    </div>
+    <div class="slide-content">
+        <div class="std-header reveal">
+            <p class="eyebrow">Módulo 3.1 · data_loader.py</p>
+            <h1>Lectura de <em>CSV</em>, validación y partición estratificada</h1>
+            <div class="divider"></div>
+        </div>
+        <div class="module reveal">
+            <div class="module-diagram">
+                <div class="io-block">
+                    <span class="io-tag in">IN</span>
+                    <div class="io-content">
+                        Dos CSVs con headers
+                        <span class="code">user_id, tweet_id, tweet_text, class</span>:
+                        <span class="code">data_train.csv</span> (1500 filas) ·
+                        <span class="code">data_test_fold1.csv</span> (250 filas, oficial).
+                    </div>
+                </div>
+                <div class="io-block">
+                    <span class="io-tag">FN</span>
+                    <div class="io-content">
+                        <span class="code">load_dataset()</span> · <span class="code">train_val_split()</span> · <span class="code">kfold_split()</span>
+                    </div>
+                </div>
+                <div class="io-block">
+                    <span class="io-tag out">OUT</span>
+                    <div class="io-content">
+                        DataFrame normalizado <span class="code">[user_id, text, label]</span>,
+                        con mapeo <span class="code">anorexia → 1</span> / <span class="code">control → 0</span>.
+                    </div>
+                </div>
+            </div>
+            <div class="module-detail">
+                <h3>Decisiones clave</h3>
+                <div class="meta-line">
+                    <span>pandas</span> · <span>csv</span> · <span>scikit-learn</span>
+                </div>
+                <ul class="feature-list">
+                    <li><strong>Validación de esquema</strong> en la carga: verifica que el CSV contenga las cuatro columnas requeridas por el Protocolo.</li>
+                    <li><strong>Renombrado canónico:</strong> mapea <span class="mono">tweet_text → text</span> y <span class="mono">class → label</span> para un DataFrame uniforme.</li>
+                    <li><strong>Sin holdout interno:</strong> se entrena con el train completo; la validación honesta queda a cargo de <span class="mono">data_test_fold1.csv</span>.</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    <div class="slide-footer">
+        <span>MÓDULO 3.1 · INGESTA</span>
+        <span>06</span>
+    </div>
+</section>
+
+<!-- ===========================================
+     SLIDE 7 — MÓDULO 3.2: PREPROCESAMIENTO
+     =========================================== -->
+<section class="slide" id="slide-7">
+    <div class="slide-meta">
+        <span><span class="num">03.2</span> · Preprocesamiento</span>
+        <span>07 / 19</span>
+    </div>
+    <div class="slide-content">
+        <div class="std-header reveal">
+            <p class="eyebrow">Módulo 3.2 · preprocessor.py</p>
+            <h1>Dos perfiles de normalización <em>configurables</em></h1>
+            <div class="divider"></div>
+        </div>
+        <div class="module reveal">
+            <div class="module-diagram">
+                <div class="io-block">
+                    <span class="io-tag in">IN</span>
+                    <div class="io-content">
+                        Texto crudo · parámetro <span class="code">profile ∈ {"lexical","emotional"}</span> · modelo spaCy.
+                    </div>
+                </div>
+                <div class="io-block">
+                    <span class="io-tag">FN</span>
+                    <div class="io-content">
+                        <span class="code">preprocess(text)</span> · <span class="code">preprocess_batch(texts)</span>
+                    </div>
+                </div>
+                <div class="io-block">
+                    <span class="io-tag out">OUT</span>
+                    <div class="io-content">
+                        Texto normalizado listo para vectorización. El perfil emocional conserva pronombres y stopwords funcionales.
+                    </div>
+                </div>
+            </div>
+            <div class="module-detail">
+                <h3>Operaciones aplicadas</h3>
+                <div class="meta-line">
+                    <span>spaCy</span> · <span>regex</span> · <span>nlp.pipe</span>
+                </div>
+                <ul class="feature-list">
+                    <li><strong>Limpieza:</strong> minúsculas, expansión de abreviaturas, eliminación de URLs, menciones y emojis.</li>
+                    <li><strong>Tokenización + lematización</strong> con spaCy en modo batch (<span class="mono">nlp.pipe</span>).</li>
+                    <li><strong>Stopwords personalizadas</strong> — el perfil emocional conserva pronombres y negaciones según Aragón et al. (2023).</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    <div class="slide-footer">
+        <span>MÓDULO 3.2 · PREPROCESAMIENTO</span>
+        <span>07</span>
+    </div>
+</section>
+
+<!-- ===========================================
+     SLIDE 8 — MÓDULO 3.3: EXTRACCIÓN MULTI-VISTA
+     =========================================== -->
+<section class="slide" id="slide-8">
+    <div class="slide-meta">
+        <span><span class="num">03.3</span> · Extracción Multi-Vista</span>
+        <span>08 / 19</span>
+    </div>
+    <div class="slide-content">
+        <div class="std-header reveal">
+            <p class="eyebrow">Módulo 3.3 · feature_extractor.py · <span class="warm">núcleo técnico</span></p>
+            <h1>Cuatro vistas <em>paralelizables</em></h1>
+            <div class="divider"></div>
+        </div>
+        <div class="views-grid reveal">
+            <div class="view-card">
+                <span class="tag">VISTA A · Léxica</span>
+                <h4>TF-IDF</h4>
+                <p>Bag-of-words con TF-IDF sobre n-gramas (1–2). Captura vocabulario discriminante específico del dominio.</p>
+                <span class="dim">n × ~15 000 · disperso</span>
+            </div>
+            <div class="view-card">
+                <span class="tag">VISTA B · Dominio</span>
+                <h4>Léxico anorexia</h4>
+                <p>Diccionario curado de la literatura (jerga pro-ana, conductas, restricción) — frecuencias por categoría.</p>
+                <span class="dim">n × ~40 · denso</span>
+            </div>
+            <div class="view-card">
+                <span class="tag">VISTA C · Estilística</span>
+                <h4>Estilo de escritura</h4>
+                <p>Longitud media, ratio de pronombres en 1ª persona, signos, mayúsculas, complejidad léxica.</p>
+                <span class="dim">n × ~30 · denso</span>
+            </div>
+            <div class="view-card">
+                <span class="tag">VISTA D · Emocional</span>
+                <h4>NRC EmoLex</h4>
+                <p>Ocho emociones + dos sentimientos básicos derivados del léxico NRC en español.</p>
+                <span class="dim">n × 10 · denso</span>
+            </div>
+        </div>
+        <p class="reveal" style="margin-top: clamp(0.8rem, 1.5vw, 1.2rem); font-size: var(--small-size); color: var(--text-muted); text-align: center; font-style: italic;">
+            Inspirado en Villa-Pérez et al. (2023) — la diversidad de vistas captura señales complementarias que un único vectorizador léxico pierde.
+        </p>
+    </div>
+    <div class="slide-footer">
+        <span>MÓDULO 3.3 · EXTRACCIÓN</span>
+        <span>08</span>
+    </div>
+</section>
+
+<!-- ===========================================
+     SLIDE 9 — MÓDULO 3.4: FUSIÓN
+     =========================================== -->
+<section class="slide" id="slide-9">
+    <div class="slide-meta">
+        <span><span class="num">03.4</span> · Fusión &amp; Reducción</span>
+        <span>09 / 19</span>
+    </div>
+    <div class="slide-content">
+        <div class="std-header reveal">
+            <p class="eyebrow">Módulo 3.4 · feature_union.py</p>
+            <h1>Concatenación con <em>FeatureUnion</em></h1>
+            <div class="divider"></div>
+        </div>
+        <div class="module reveal">
+            <div class="module-diagram">
+                <div class="io-block">
+                    <span class="io-tag in">IN</span>
+                    <div class="io-content">
+                        Cuatro matrices de vistas: A (disp), B / C / D (densas).
+                    </div>
+                </div>
+                <div class="io-block">
+                    <span class="io-tag">FN</span>
+                    <div class="io-content">
+                        <span class="code">sklearn.pipeline.FeatureUnion</span> +
+                        <span class="code">StandardScaler</span> +
+                        <span class="code">SelectKBest(chi²)</span>
+                    </div>
+                </div>
+                <div class="io-block">
+                    <span class="io-tag out">OUT</span>
+                    <div class="io-content">
+                        Matriz fusionada <span class="code">n × ~15 080</span> · híbrida (disp + densa).
+                    </div>
+                </div>
+            </div>
+            <div class="module-detail">
+                <h3>Estrategia de fusión</h3>
+                <div class="meta-line">
+                    <span>FeatureUnion</span> · <span>StandardScaler</span> · <span>chi²</span>
+                </div>
+                <ul class="feature-list">
+                    <li><strong>StandardScaler</strong> aplicado solo a las vistas densas B, C, D — la vista A se mantiene dispersa para no inflar memoria.</li>
+                    <li><strong>SelectKBest(chi²)</strong> opcional sobre la porción TF-IDF para reducir ruido antes del clasificador.</li>
+                    <li><strong>Fusión tardía:</strong> cada vista mantiene su naturaleza estadística sin imponer una transformación global prematura.</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    <div class="slide-footer">
+        <span>MÓDULO 3.4 · FUSIÓN</span>
+        <span>09</span>
+    </div>
+</section>
+
+<!-- ===========================================
+     SLIDE 10 — MÓDULO 3.5: CLASIFICADOR
+     =========================================== -->
+<section class="slide" id="slide-10">
+    <div class="slide-meta">
+        <span><span class="num">03.5</span> · Clasificador</span>
+        <span>10 / 19</span>
+    </div>
+    <div class="slide-content">
+        <div class="std-header reveal">
+            <p class="eyebrow">Módulo 3.5 · classifier.py</p>
+            <h1>Grid comparativo de <em>cuatro algoritmos</em></h1>
+            <div class="divider"></div>
+        </div>
+        <div class="module reveal">
+            <div class="module-diagram">
+                <div class="io-block">
+                    <span class="io-tag in">IN</span>
+                    <div class="io-content">
+                        Matriz fusionada + vector de etiquetas <span class="code">y ∈ {0,1}</span>.
+                    </div>
+                </div>
+                <div class="io-block">
+                    <span class="io-tag">FN</span>
+                    <div class="io-content">
+                        <span class="code">compare_models()</span> · <span class="code">fit_winner()</span> · CV estratificada 5-fold.
+                    </div>
+                </div>
+                <div class="io-block">
+                    <span class="io-tag out">OUT</span>
+                    <div class="io-content">
+                        Modelo ajustado, vector <span class="code">y_proba</span> y vector <span class="code">y_pred</span>.
+                    </div>
+                </div>
+            </div>
+            <div class="module-detail">
+                <h3>Algoritmos en el grid</h3>
+                <div class="meta-line">
+                    <span>logreg</span> · <span>svm</span> · <span>xgb</span> · <span>rf</span>
+                </div>
+                <ul class="feature-list">
+                    <li><strong>Regresión Logística</strong> (l2) — interpretable; obtuvo el AUC ganador en CV.</li>
+                    <li><strong>SVM lineal</strong> calibrado con Platt scaling para soportar <span class="mono">predict_proba</span>.</li>
+                    <li><strong>XGBoost</strong> con <span class="mono">tree_method="hist"</span> para acelerar el entrenamiento.</li>
+                    <li><strong>Random Forest</strong> como baseline robusto no-paramétrico.</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    <div class="slide-footer">
+        <span>MÓDULO 3.5 · CLASIFICACIÓN</span>
+        <span>10</span>
+    </div>
+</section>
+
+<!-- ===========================================
+     SLIDE 11 — MÓDULO 3.6: EVALUACIÓN
+     =========================================== -->
+<section class="slide" id="slide-11">
+    <div class="slide-meta">
+        <span><span class="num">03.6</span> · Evaluación</span>
+        <span>11 / 19</span>
+    </div>
+    <div class="slide-content">
+        <div class="std-header reveal">
+            <p class="eyebrow">Módulo 3.6 · evaluator.py</p>
+            <h1>AUC-ROC como métrica <em>primaria</em></h1>
+            <div class="divider"></div>
+        </div>
+        <div class="module reveal">
+            <div class="module-diagram">
+                <div class="io-block">
+                    <span class="io-tag in">IN</span>
+                    <div class="io-content">
+                        Vectores <span class="code">y_true, y_pred, y_proba</span> del test oficial o de un fold de CV.
+                    </div>
+                </div>
+                <div class="io-block">
+                    <span class="io-tag">FN</span>
+                    <div class="io-content">
+                        <span class="code">compute_metrics()</span> · <span class="code">plot_roc()</span> · <span class="code">plot_feature_importance()</span> · <span class="code">analyze_false_negatives()</span>
+                    </div>
+                </div>
+                <div class="io-block">
+                    <span class="io-tag out">OUT</span>
+                    <div class="io-content">
+                        AUC-ROC, F1, Precisión, Recall, matriz de confusión + gráficos PNG + CSV de falsos negativos.
+                    </div>
+                </div>
+            </div>
+            <div class="module-detail">
+                <h3>Salidas adicionales</h3>
+                <div class="meta-line">
+                    <span>matplotlib</span> · <span>scikit-learn</span> · <span>pandas</span>
+                </div>
+                <ul class="feature-list">
+                    <li><strong>Curva ROC</strong> con AUC anotada — exportada a <span class="mono">output/curva_roc.png</span>.</li>
+                    <li><strong>Top-20 atributos</strong> más discriminantes con coeficientes signados — <span class="mono">importancia_atributos.png</span>.</li>
+                    <li><strong>Análisis clínico de FN</strong> exportado a CSV para revisión manual del experto.</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    <div class="slide-footer">
+        <span>MÓDULO 3.6 · EVALUACIÓN</span>
+        <span>11</span>
+    </div>
+</section>
+
+<!-- ===========================================
+     SLIDE 12 — MÓDULO 3.7: PREDICCIÓN & SERIALIZACIÓN
+     =========================================== -->
+<section class="slide" id="slide-12">
+    <div class="slide-meta">
+        <span><span class="num">03.7</span> · Predicción &amp; Serialización</span>
+        <span>12 / 19</span>
+    </div>
+    <div class="slide-content">
+        <div class="std-header reveal">
+            <p class="eyebrow">Módulo 3.7 · predictor.py</p>
+            <h1>Un solo <em>.pkl</em> que encapsula todo el pipeline</h1>
+            <div class="divider"></div>
+        </div>
+        <div class="module reveal">
+            <div class="module-diagram">
+                <div class="io-block">
+                    <span class="io-tag in">IN</span>
+                    <div class="io-content">
+                        Pipeline entrenado + archivo <span class="code">.csv</span> de prueba del Protocolo
+                        (<span class="code">user_id, tweet_id, tweet_text, class</span>).
+                    </div>
+                </div>
+                <div class="io-block">
+                    <span class="io-tag">FN</span>
+                    <div class="io-content">
+                        <span class="code">save_pipeline()</span> · <span class="code">load_pipeline()</span> · <span class="code">predict(texts)</span>
+                    </div>
+                </div>
+                <div class="io-block">
+                    <span class="io-tag out">OUT</span>
+                    <div class="io-content">
+                        <span class="code">modelo_anorexia_v1.pkl</span> · <span class="code">predicciones_finales.csv</span>
+                        con columnas <span class="code">text_id, predicted_label, probability_yes</span>.
+                    </div>
+                </div>
+            </div>
+            <div class="module-detail">
+                <h3>Capacidades</h3>
+                <div class="meta-line">
+                    <span>joblib</span> · <span>pandas</span>
+                </div>
+                <ul class="feature-list">
+                    <li><strong>Serialización completa</strong> del pipeline (preprocesador + extractor + fusión + clasificador) con <span class="mono">joblib</span>.</li>
+                    <li><strong>API simple:</strong> <span class="mono">predict(texts)</span> retorna etiquetas y probabilidades sin requerir reconfiguración.</li>
+                    <li><strong>Reporte automatizado</strong> en HTML/Markdown con métricas y artefactos del run.</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    <div class="slide-footer">
+        <span>MÓDULO 3.7 · PREDICCIÓN</span>
+        <span>12</span>
+    </div>
+</section>
+
+<!-- ===========================================
+     SLIDE 13 — DEPENDENCIAS EXTERNAS
+     =========================================== -->
+<section class="slide" id="slide-13">
+    <div class="slide-meta">
+        <span><span class="num">04</span> · Dependencias externas</span>
+        <span>13 / 19</span>
+    </div>
+    <div class="slide-content">
+        <div class="std-header reveal">
+            <p class="eyebrow">Sección 4</p>
+            <h1>Cuatro recursos que la herramienta <em>carga al inicio</em></h1>
+            <div class="divider"></div>
+        </div>
+        <div class="dep-grid reveal">
+            <div class="dep-card">
+                <span class="role">Tokenización · Lematización</span>
+                <h4>spaCy <span class="pkg">es_core_news_sm</span></h4>
+                <p>Modelo de lenguaje en español para tokenización, etiquetado POS y lematización. Carga única al iniciar el pipeline.</p>
+            </div>
+            <div class="dep-card">
+                <span class="role">Vista emocional</span>
+                <h4>NRC EmoLex <span class="pkg">.txt</span></h4>
+                <p>Léxico de emociones y sentimientos en formato tabular. Provee las 8 categorías emocionales + valencia y arousal.</p>
+            </div>
+            <div class="dep-card">
+                <span class="role">Vista de dominio</span>
+                <h4>Diccionario Anorexia <span class="pkg">.json</span></h4>
+                <p>Diccionario curado a partir de Ramírez-Cifuentes (2020) y Aguilera (2021). Categorías: jerga pro-ana, restricción, peso, cuerpo.</p>
+            </div>
+            <div class="dep-card">
+                <span class="role">Vista estilística (opcional)</span>
+                <h4>LIWC / Empath <span class="pkg">fallback</span></h4>
+                <p>LIWC con licencia comercial; cuando no está disponible se sustituye por Empath con cobertura comparable de categorías psicolingüísticas.</p>
+            </div>
+        </div>
+    </div>
+    <div class="slide-footer">
+        <span>DEPENDENCIAS</span>
+        <span>13</span>
+    </div>
+</section>
+
+<!-- ===========================================
+     SLIDE 14 — JUSTIFICACIÓN METODOLÓGICA
+     =========================================== -->
+<section class="slide" id="slide-14">
+    <div class="slide-meta">
+        <span><span class="num">05</span> · Justificación</span>
+        <span>14 / 19</span>
+    </div>
+    <div class="slide-content">
+        <div class="std-header reveal">
+            <p class="eyebrow">Sección 5</p>
+            <h1>Cuatro decisiones, <em>respaldadas por literatura</em></h1>
+            <div class="divider"></div>
+        </div>
+        <div class="just-grid reveal">
+            <div class="just-card">
+                <span class="n">01 · VISTA EMOCIONAL</span>
+                <h4>Las emociones predicen anorexia</h4>
+                <p>BoSE + Regresión Logística alcanza <strong class="warm">F1 = 0.84</strong> en eRisk 2018. La señal emocional es complementaria a la léxica y barata de calcular.</p>
+                <span class="cite">Aragón et al. (2023)</span>
+            </div>
+            <div class="just-card">
+                <span class="n">02 · LÉXICO DE DOMINIO</span>
+                <h4>La jerga pro-ana es clínicamente interpretable</h4>
+                <p>Términos como <span class="mono">gordo · perfeccion · bajar</span> son predictores explicables que un clínico puede auditar — fundamental para uso real.</p>
+                <span class="cite">Ramírez-Cifuentes 2020 · Aguilera 2021</span>
+            </div>
+            <div class="just-card">
+                <span class="n">03 · GRID DE CLASIFICADORES</span>
+                <h4>SVM · LR · RF · XGBoost</h4>
+                <p>Consenso del estado del arte sobre este conjunto de cuatro algoritmos por su balance entre rendimiento, interpretabilidad y robustez ante desbalance.</p>
+                <span class="cite">Villa-Pérez 2023 · Benítez-Andrades 2022</span>
+            </div>
+            <div class="just-card">
+                <span class="n">04 · AUC-ROC PRIMARIA</span>
+                <h4>Métrica robusta a desbalance</h4>
+                <p>Exigida por el Protocolo, AUC mide ordenamiento de scores y no depende del umbral — apropiada para tareas clínicas donde el coste de FN ≠ FP.</p>
+                <span class="cite">Protocolo eRisk · estándar metodológico</span>
+            </div>
+        </div>
+    </div>
+    <div class="slide-footer">
+        <span>JUSTIFICACIÓN METODOLÓGICA</span>
+        <span>14</span>
+    </div>
+</section>
+
+<!-- ===========================================
+     SLIDE 15 — RESULTADOS · COMPARACIÓN DE MODELOS
+     =========================================== -->
+<section class="slide" id="slide-15">
+    <div class="slide-meta">
+        <span><span class="num">06.1</span> · Resultados · CV</span>
+        <span>15 / 19</span>
+    </div>
+    <div class="slide-content">
+        <div class="std-header reveal">
+            <p class="eyebrow">Sección 6.1 · Diagnóstico interno · CV sobre el train</p>
+            <h1>La <em>Regresión Logística</em> gana el comparador</h1>
+            <div class="divider"></div>
+        </div>
+        <div class="results-grid reveal">
+            <div>
+                <p style="margin-bottom: clamp(0.7rem, 1.3vw, 1rem); font-size: var(--small-size); color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.15em; font-family: var(--font-mono);">
+                    Ranking · 5-Fold CV sobre data_train.csv (1500 muestras)
+                </p>
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                            <tr><th>Modelo</th><th style="text-align:right;">CV AUC</th><th style="text-align:right;">Δ vs ganador</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr class="winner"><td>logreg</td><td style="text-align:right;">0.9558</td><td style="text-align:right;">—</td></tr>
+                            <tr><td>svm</td><td style="text-align:right;">0.9546</td><td style="text-align:right;">−0.0012</td></tr>
+                            <tr><td>xgb</td><td style="text-align:right;">0.9356</td><td style="text-align:right;">−0.0202</td></tr>
+                            <tr><td>rf</td><td style="text-align:right;">0.9310</td><td style="text-align:right;">−0.0248</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <p style="margin-top: clamp(0.7rem, 1.3vw, 1rem); font-size: var(--small-size); color: var(--text-secondary); line-height: 1.5;">
+                    Los cuatro algoritmos superan <span class="warm">0.93 AUC</span> en validación cruzada — evidencia de que la <strong>fusión multi-vista</strong> domina sobre la elección de clasificador en esta tarea.
+                </p>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: clamp(0.8rem, 1.5vw, 1.2rem); justify-content: center;">
+                <div class="metric primary">
+                    <span class="label">Ganador</span>
+                    <span class="value" style="font-size: clamp(1.3rem, 3vw, 2.4rem);">LogReg</span>
+                    <span class="sub">CV AUC = 0.9558 · entrenado sobre 1500 muestras del train completo</span>
+                </div>
+                <div class="metric sage">
+                    <span class="label">Brecha SVM ↔ LR</span>
+                    <span class="value">0.0012</span>
+                    <span class="sub">Diferencia mínima — la LR se prefirió por interpretabilidad de coeficientes.</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="slide-footer">
+        <span>RESULTADOS · COMPARACIÓN DE MODELOS</span>
+        <span>15</span>
+    </div>
+</section>
+
+<!-- ===========================================
+     SLIDE 16 — RESULTADOS · HOLDOUT
+     =========================================== -->
+<section class="slide" id="slide-16">
+    <div class="slide-meta">
+        <span><span class="num">06.2</span> · Resultados · Test oficial</span>
+        <span>16 / 19</span>
+    </div>
+    <div class="slide-content">
+        <div class="std-header reveal">
+            <p class="eyebrow">Evaluación honesta · 250 textos de data_test_fold1.csv</p>
+            <h1>AUC oficial = <em>0.9214</em> sobre el conjunto del Protocolo</h1>
+            <div class="divider"></div>
+        </div>
+        <div class="results-grid reveal" style="grid-template-columns: 1fr 1fr;">
+            <div style="display: flex; flex-direction: column; gap: clamp(0.6rem, 1.2vw, 1rem);">
+                <div class="metric-grid">
+                    <div class="metric primary">
+                        <span class="label">AUC-ROC</span>
+                        <span class="value">0.9214</span>
+                        <span class="sub">métrica primaria sobre test oficial</span>
+                    </div>
+                    <div class="metric sage">
+                        <span class="label">Accuracy</span>
+                        <span class="value">0.86</span>
+                        <span class="sub">216 / 250</span>
+                    </div>
+                    <div class="metric">
+                        <span class="label">F1 (macro)</span>
+                        <span class="value">0.86</span>
+                        <span class="sub">precision 0.87 · recall 0.86</span>
+                    </div>
+                    <div class="metric coral">
+                        <span class="label">Recall clase 1</span>
+                        <span class="value">0.91</span>
+                        <span class="sub">priorizado clínicamente</span>
+                    </div>
+                </div>
+                <p style="font-size: var(--small-size); color: var(--text-muted); font-style: italic; line-height: 1.5;">
+                    Brecha CV ↔ test = <strong class="coral">−0.034</strong> · overfit suave esperable; el desempeño se mantiene dentro del rango reportado en la literatura (0.80–0.92).
+                </p>
+            </div>
+            <div>
+                <p style="margin-bottom: clamp(0.5rem, 1vw, 0.8rem); font-size: var(--small-size); color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.15em; font-family: var(--font-mono);">
+                    Matriz de confusión · n = 250
+                </p>
+                <div class="confusion">
+                    <div class="cell head"></div>
+                    <div class="cell head">Pred · 0</div>
+                    <div class="cell head">Pred · 1</div>
+                    <div class="cell head">Real · 0</div>
+                    <div class="cell tn"><span class="big">94</span><span class="lbl">TN</span></div>
+                    <div class="cell fp"><span class="big">22</span><span class="lbl">FP</span></div>
+                    <div class="cell head">Real · 1</div>
+                    <div class="cell fn"><span class="big">12</span><span class="lbl">FN</span></div>
+                    <div class="cell tp"><span class="big">122</span><span class="lbl">TP</span></div>
+                </div>
+                <p style="margin-top: clamp(0.5rem, 1vw, 0.8rem); font-size: var(--small-size); color: var(--text-secondary); line-height: 1.5;">
+                    Los <strong class="coral">12 falsos negativos</strong> (8.96% de la clase positiva) fueron exportados a
+                    <span class="mono">analisis_clinico_falsos_negativos.csv</span>.
+                </p>
+            </div>
+        </div>
+    </div>
+    <div class="slide-footer">
+        <span>RESULTADOS · TEST OFICIAL</span>
+        <span>16</span>
+    </div>
+</section>
+
+<!-- ===========================================
+     SLIDE 17 — CURVA ROC
+     =========================================== -->
+<section class="slide" id="slide-17">
+    <div class="slide-meta">
+        <span><span class="num">06.3</span> · Curva ROC</span>
+        <span>17 / 19</span>
+    </div>
+    <div class="slide-content">
+        <div class="std-header reveal">
+            <p class="eyebrow">Evidencia visual · área bajo la curva</p>
+            <h1>El comportamiento ROC <em>se sostiene</em> en todo el rango</h1>
+            <div class="divider"></div>
+        </div>
+        <div class="results-grid reveal" style="grid-template-columns: 1.5fr 1fr;">
+            <div class="figure">
+                <div class="figure-image">
+                    <img src="presentacion-assets/curva_roc.png" alt="Curva ROC del modelo ganador sobre test oficial" />
+                </div>
+                <div class="figure-caption">
+                    Fig. 1 · <strong>ROC</strong> · LogReg sobre vistas fusionadas · <strong>data_test_fold1.csv</strong> (250 textos) · <strong>AUC = 0.92</strong>
+                </div>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: clamp(0.6rem, 1.2vw, 1rem); justify-content: center;">
+                <h3>Lectura clínica</h3>
+                <ul class="feature-list">
+                    <li>El modelo alcanza <strong class="warm">TPR &gt; 0.90</strong> con FPR ≈ 0.20 — útil como filtro de cribado.</li>
+                    <li>La curva domina ampliamente la diagonal aleatoria.</li>
+                    <li>El codo permite ajustar el umbral según el coste relativo de FN vs FP en cada despliegue.</li>
+                </ul>
+                <p style="font-size: var(--small-size); color: var(--text-muted); font-style: italic; padding-top: clamp(0.4rem, 0.9vw, 0.7rem); border-top: 1px solid var(--line);">
+                    Generada por <span class="mono">evaluator.plot_roc()</span> · exportada a
+                    <span class="mono">output/curva_roc.png</span>
+                </p>
+            </div>
+        </div>
+    </div>
+    <div class="slide-footer">
+        <span>EVIDENCIA · ROC</span>
+        <span>17</span>
+    </div>
+</section>
+
+<!-- ===========================================
+     SLIDE 18 — IMPORTANCIA DE ATRIBUTOS
+     =========================================== -->
+<section class="slide" id="slide-18">
+    <div class="slide-meta">
+        <span><span class="num">06.4</span> · Importancia de atributos</span>
+        <span>18 / 19</span>
+    </div>
+    <div class="slide-content">
+        <div class="std-header reveal">
+            <p class="eyebrow">Interpretabilidad · Top-20 atributos discriminantes</p>
+            <h1>El modelo <em>habla un idioma clínico</em></h1>
+            <div class="divider"></div>
+        </div>
+        <div class="results-grid reveal" style="grid-template-columns: 1.5fr 1fr;">
+            <div class="figure">
+                <div class="figure-image">
+                    <img src="presentacion-assets/importancia_atributos.png" alt="Top 20 atributos más discriminantes" />
+                </div>
+                <div class="figure-caption">
+                    Fig. 2 · <strong>Coeficientes signados</strong> de la LogReg · barras positivas → clase 1 (anorexia), barras negativas → clase 0.
+                </div>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: clamp(0.5rem, 1vw, 0.8rem); justify-content: center;">
+                <h3>Términos positivos (clase 1)</h3>
+                <p style="font-family: var(--font-mono); font-size: var(--small-size); color: var(--accent-warm); line-height: 1.7;">
+                    gordo · bajar · perfeccion · sentir<br/>
+                    perfecto · bulimio · difícil
+                </p>
+                <h3 style="margin-top: clamp(0.3rem, 0.7vw, 0.5rem);">Términos negativos (clase 0)</h3>
+                <p style="font-family: var(--font-mono); font-size: var(--small-size); color: var(--accent-sage); line-height: 1.7;">
+                    adolescente · fit · quemar grasa<br/>
+                    yo invitar · tendencia · señora
+                </p>
+                <p style="font-size: var(--small-size); color: var(--text-secondary); margin-top: clamp(0.4rem, 0.9vw, 0.6rem); padding-top: clamp(0.4rem, 0.9vw, 0.6rem); border-top: 1px solid var(--line); line-height: 1.5;">
+                    <strong>La interpretabilidad es auditada:</strong> los términos coinciden con la jerga clínica esperada.
+                </p>
+            </div>
+        </div>
+    </div>
+    <div class="slide-footer">
+        <span>EVIDENCIA · IMPORTANCIA</span>
+        <span>18</span>
+    </div>
+</section>
+
+<!-- ===========================================
+     SLIDE 19 — OPTIMIZACIONES & PRUEBAS UNITARIAS
+     =========================================== -->
+<section class="slide" id="slide-19">
+    <div class="slide-meta">
+        <span><span class="num">07</span> · Optimizaciones &amp; Testing</span>
+        <span>19 / 19</span>
+    </div>
+    <div class="slide-content">
+        <div class="std-header reveal">
+            <p class="eyebrow">Parte B del entregable · cobertura y eficiencia</p>
+            <h1>Pruebas unitarias y <em>optimizaciones</em> aplicadas</h1>
+            <div class="divider"></div>
+        </div>
+        <div class="opt-stat-row reveal">
+            <div class="opt-stat">
+                <div class="n">143</div>
+                <div class="l">Pruebas unitarias</div>
+            </div>
+            <div class="opt-stat">
+                <div class="n">7</div>
+                <div class="l">Módulos cubiertos</div>
+            </div>
+            <div class="opt-stat">
+                <div class="n">100%</div>
+                <div class="l">Tasa de éxito</div>
+            </div>
+        </div>
+        <div class="opt-grid reveal">
+            <div>
+                <h3 style="margin-bottom: clamp(0.5rem, 1vw, 0.7rem);">Cobertura por módulo</h3>
+                <table class="opt-table">
+                    <thead><tr><th>Módulo</th><th>Áreas críticas</th></tr></thead>
+                    <tbody>
+                        <tr><td>data_loader</td><td>esquemas A/B · validación · stratified split</td></tr>
+                        <tr><td>preprocessor</td><td>perfiles · batch mode · regex de limpieza</td></tr>
+                        <tr><td>feature_extractor</td><td>cuatro vistas · dims · valores límite</td></tr>
+                        <tr><td>feature_union</td><td>fusión · escalado selectivo · chi²</td></tr>
+                        <tr><td>classifier</td><td>grid · CV · selección del ganador</td></tr>
+                        <tr><td>evaluator</td><td>métricas · gráficos · análisis FN</td></tr>
+                        <tr><td>predictor</td><td>save/load · pipeline end-to-end</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <div>
+                <h3 style="margin-bottom: clamp(0.5rem, 1vw, 0.7rem);">Optimizaciones aplicadas</h3>
+                <table class="opt-table">
+                    <thead><tr><th>Cambio</th><th>Beneficio</th></tr></thead>
+                    <tbody>
+                        <tr><td>nlp.pipe()</td><td>Batch en spaCy · ~3× más rápido vs por-documento</td></tr>
+                        <tr><td>tree_method="hist"</td><td>XGBoost histogram-based · entrenamiento acelerado</td></tr>
+                        <tr><td>FeatureUnion</td><td>Cuatro vistas en paralelo · sparse + dense híbrido</td></tr>
+                        <tr><td>SelectKBest(chi²)</td><td>Reducción de dimensión TF-IDF antes del clasificador</td></tr>
+                        <tr><td>Matriz dispersa</td><td>Vista A en CSR · ahorro de memoria significativo</td></tr>
+                        <tr><td>joblib serialize</td><td>Pipeline completo en un .pkl reutilizable</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <div class="slide-footer">
+        <span>OPTIMIZACIONES · TESTING</span>
+        <span>19</span>
+    </div>
+</section>
+
+<!-- ===========================================
+     SLIDE 20 — CONSIDERACIONES Y CIERRE
+     =========================================== -->
+<section class="slide" id="slide-20">
+    <div class="slide-meta">
+        <span><span class="num">08</span> · Hacia Fase 3</span>
+        <span>20 / 19</span>
+    </div>
+    <div class="slide-content">
+        <div class="std-header reveal">
+            <p class="eyebrow">Sección 8 · Cierre</p>
+            <h1>Lo que <em>queda preparado</em> para fases subsecuentes</h1>
+            <div class="divider"></div>
+        </div>
+        <div class="consid reveal">
+            <div class="consid-col">
+                <span class="tag">PARTE B · Cerrada</span>
+                <h3>Modularidad como base de testing</h3>
+                <p>
+                    Cada módulo es una <strong>unidad natural de pruebas</strong>. Las vistas A–D ofrecen
+                    múltiples puntos de optimización: paralelización, cacheo, matrices dispersas y selección
+                    con chi² ya están aprovechadas.
+                </p>
+                <p style="margin-top: clamp(0.3rem, 0.7vw, 0.5rem);">
+                    El predictor serializado en <span class="mono">modelo_anorexia_v1.pkl</span> se puede
+                    desplegar como microservicio sin tocar el resto del código.
+                </p>
+            </div>
+            <div class="consid-col">
+                <span class="tag">FASE 3 · Hoja de ruta</span>
+                <h3>El clasificador es <em>reemplazable</em></h3>
+                <p>
+                    El módulo 3.5 puede sustituirse por un <strong>transformer fine-tuneado</strong>
+                    (BERT-base, receta UNSL; o MentalBERT) sin alterar el resto del pipeline.
+                </p>
+                <p style="margin-top: clamp(0.3rem, 0.7vw, 0.5rem);">
+                    La comparabilidad directa en AUC contra la baseline actual queda garantizada por el
+                    mismo evaluator y el mismo conjunto de prueba oficial.
+                </p>
+                <p style="margin-top: clamp(0.3rem, 0.7vw, 0.5rem); font-family: var(--font-mono); font-size: var(--small-size); color: var(--text-muted); font-style: italic;">
+                    Thompson &amp; Errecalde 2024 · Grigore &amp; Pintilie 2023
+                </p>
+            </div>
+        </div>
+        <div class="reveal" style="margin-top: clamp(1.2rem, 2.5vw, 2rem); text-align: center; padding-top: clamp(0.8rem, 1.5vw, 1.2rem); border-top: 1px solid var(--line-strong);">
+            <p style="font-family: var(--font-display); font-style: italic; font-size: clamp(1.1rem, 2vw, 1.6rem); color: var(--text-primary);">
+                Gracias · Equipo 8
+            </p>
+            <p style="font-family: var(--font-mono); font-size: var(--small-size); color: var(--text-muted); margin-top: 0.4rem; letter-spacing: 0.2em; text-transform: uppercase;">
+                Detección Digital de Anorexia · Fase 2-B · 2026
+            </p>
+        </div>
+    </div>
+    <div class="slide-footer">
+        <span>CONSIDERACIONES &amp; FASE 3</span>
+        <span>20</span>
+    </div>
+</section>
+
+<!-- ===========================================
+     SCRIPT: SlidePresentation controller
+     =========================================== -->
+<script>
+class SlidePresentation {
+    constructor() {
+        this.slides = document.querySelectorAll('.slide');
+        this.navDotsContainer = document.querySelector('.nav-dots');
+        this.progressBar = document.querySelector('.progress-bar');
+        this.currentSlide = 0;
+
+        this.setupIntersectionObserver();
+        this.setupKeyboardNav();
+        this.setupTouchNav();
+        this.setupProgressBar();
+        this.setupNavDots();
+    }
+
+    setupIntersectionObserver() {
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting && entry.intersectionRatio > 0.5) {
+                    entry.target.classList.add('visible');
+                    const idx = Array.from(this.slides).indexOf(entry.target);
+                    if (idx !== -1) this.currentSlide = idx;
+                    this.updateNavDots();
+                }
+            });
+        }, { threshold: [0.5] });
+
+        this.slides.forEach(slide => observer.observe(slide));
+    }
+
+    setupKeyboardNav() {
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowDown' || e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') {
+                e.preventDefault();
+                this.goToSlide(this.currentSlide + 1);
+            } else if (e.key === 'ArrowUp' || e.key === 'ArrowLeft' || e.key === 'PageUp') {
+                e.preventDefault();
+                this.goToSlide(this.currentSlide - 1);
+            } else if (e.key === 'Home') {
+                e.preventDefault();
+                this.goToSlide(0);
+            } else if (e.key === 'End') {
+                e.preventDefault();
+                this.goToSlide(this.slides.length - 1);
+            }
+        });
+    }
+
+    setupTouchNav() {
+        let touchStartY = 0;
+        document.addEventListener('touchstart', (e) => { touchStartY = e.touches[0].clientY; }, { passive: true });
+        document.addEventListener('touchend', (e) => {
+            const touchEndY = e.changedTouches[0].clientY;
+            const diff = touchStartY - touchEndY;
+            if (Math.abs(diff) < 50) return;
+            if (diff > 0) this.goToSlide(this.currentSlide + 1);
+            else this.goToSlide(this.currentSlide - 1);
+        }, { passive: true });
+    }
+
+    setupProgressBar() {
+        window.addEventListener('scroll', () => {
+            const winH = window.innerHeight;
+            const docH = document.documentElement.scrollHeight;
+            const scroll = window.scrollY;
+            const pct = (scroll / (docH - winH)) * 100;
+            this.progressBar.style.width = Math.min(pct, 100) + '%';
+        }, { passive: true });
+    }
+
+    setupNavDots() {
+        // Crítico: limpiar primero — re-render duplica los dots si el HTML se guarda con dots ya renderizados.
+        this.navDotsContainer.innerHTML = '';
+        this.slides.forEach((_, idx) => {
+            const dot = document.createElement('button');
+            dot.setAttribute('aria-label', 'Ir a slide ' + (idx + 1));
+            dot.addEventListener('click', () => this.goToSlide(idx));
+            this.navDotsContainer.appendChild(dot);
+        });
+        this.updateNavDots();
+    }
+
+    updateNavDots() {
+        const dots = this.navDotsContainer.querySelectorAll('button');
+        dots.forEach((d, i) => d.classList.toggle('active', i === this.currentSlide));
+    }
+
+    goToSlide(idx) {
+        if (idx < 0 || idx >= this.slides.length) return;
+        this.slides[idx].scrollIntoView({ behavior: 'smooth' });
+        this.currentSlide = idx;
+    }
+}
+
+new SlidePresentation();
+</script>
+</body>
+</html>

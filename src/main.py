@@ -26,14 +26,24 @@ OUTPUT_DIR = Path("output")
 def main():
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
-    # 1. CARGA DE DATOS
+    # 1. CARGA DE DATOS — train completo + test oficial con etiquetas
     print("--- Fase 1: Ingesta de Datos ---")
-    loader = DataLoader(filepath="data/data_train.csv")
-    df = loader.load()
-    train_df, val_df = loader.train_val_split(df)
-
+    train_loader = DataLoader(filepath="data/data_train.csv")
+    train_df = train_loader.load()
     X_train, y_train = train_df["text"], train_df["label"]
-    X_val, y_val = val_df["text"], val_df["label"]
+
+    test_loader = DataLoader(filepath="data/data_test_fold1.csv")
+    test_df = test_loader.load()
+    X_test, y_test = test_df["text"], test_df["label"]
+
+    print(
+        f"Train: {len(train_df)} muestras "
+        f"({int(y_train.sum())} anorexia, {int((1 - y_train).sum())} control)"
+    )
+    print(
+        f"Test:  {len(test_df)} muestras "
+        f"({int(y_test.sum())} anorexia, {int((1 - y_test).sum())} control)"
+    )
 
     # 2. CONSTRUCCIÓN DEL PIPELINE (Unión de todos los módulos)
     print("\n--- Fase 2: Configuración del Pipeline ---")
@@ -49,25 +59,25 @@ def main():
         ("clf", ClassifierComparator()),
     ])
 
-    # 3. ENTRENAMIENTO
-    print("\n--- Fase 3: Entrenamiento del Modelo ---")
+    # 3. ENTRENAMIENTO sobre data_train.csv COMPLETO
+    print("\n--- Fase 3: Entrenamiento del Modelo (data_train.csv completo) ---")
     full_pipeline.fit(X_train, y_train)
 
     clf = full_pipeline.named_steps["clf"]
     print(f"\nGanador: {clf.best_name_} (CV AUC={clf.best_score_:.4f})")
-    print("Ranking de modelos (AUC-ROC promedio 5-fold CV):")
+    print("Ranking de modelos (AUC-ROC promedio 5-fold CV sobre train):")
     for name, score in clf.ranking():
         print(f"  {name:<8} {score:.4f}")
 
-    # 4. EVALUACIÓN
-    print("\n--- Fase 4: Evaluación Clínica ---")
-    y_pred = full_pipeline.predict(X_val)
-    y_probs = full_pipeline.predict_proba(X_val)[:, 1]
+    # 4. EVALUACIÓN sobre el conjunto de prueba oficial
+    print("\n--- Fase 4: Evaluación Clínica sobre data_test_fold1.csv ---")
+    y_pred = full_pipeline.predict(X_test)
+    y_probs = full_pipeline.predict_proba(X_test)[:, 1]
 
     feature_names = full_pipeline.named_steps["features"].get_feature_names_out()
 
     evaluate_model(
-        y_true=y_val,
+        y_true=y_test,
         y_pred=y_pred,
         y_probs=y_probs,
         model=full_pipeline.named_steps["clf"].best_estimator_,
@@ -77,8 +87,8 @@ def main():
     )
 
     export_clinical_errors(
-        X_val,
-        y_val,
+        X_test,
+        y_test,
         y_pred,
         y_probs,
         filename=OUTPUT_DIR / "analisis_clinico_falsos_negativos.csv",
