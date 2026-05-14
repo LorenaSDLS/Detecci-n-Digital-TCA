@@ -9,6 +9,7 @@ from pathlib import Path
 
 import pandas as pd
 import pytest
+import os
 
 
 @pytest.fixture
@@ -140,3 +141,26 @@ def nrc_lexicon_path(tmp_path) -> Path:
         encoding="utf-8",
     )
     return stub
+
+# ---------------------------------------------------------------------------
+# (Lorens Solís)
+#Fixture que se ejecuta para limpiar los archivos Excel generados por los módulos después de cada test.
+# ---------------------------------------------------------------------------
+@pytest.fixture(autouse=True)
+def cleanup_outputs():
+    """
+    Fixture que se ejecuta automáticamente para limpiar los archivos 
+    Excel generados por los módulos de Lorena después de cada test.
+    """
+    yield 
+    
+    # Después del test, borramos archivos temporales si existen
+    files_to_clean = [
+        "predicciones_finales.xlsx", 
+        "analisis_clinico_falsos_negativos.xlsx",
+        "curva_roc.png",
+        "importancia_atributos.png"
+    ]
+    for f in files_to_clean:
+        if os.path.exists(f):
+            os.remove(f)
