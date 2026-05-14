@@ -156,7 +156,9 @@ def cleanup_outputs():
     
     # Después del test, borramos archivos temporales si existen
     files_to_clean = [
-        "predicciones_finales.xlsx", 
+        "predicciones_finales.csv",
+        "predicciones_finales.xlsx",
+        "analisis_clinico_falsos_negativos.csv",
         "analisis_clinico_falsos_negativos.xlsx",
         "curva_roc.png",
         "importancia_atributos.png"

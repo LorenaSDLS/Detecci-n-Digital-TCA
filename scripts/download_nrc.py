@@ -50,8 +50,20 @@ def main() -> int:
     _OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
 
     print(f"[..] Descargando NRC EmoLex desde {_NRC_ZIP_URL}")
+    # El servidor del NRC rechaza requests sin User-Agent realista (HTTP 406).
+    req = urllib.request.Request(
+        _NRC_ZIP_URL,
+        headers={
+            "User-Agent": (
+                "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+                "AppleWebKit/537.36 (KHTML, like Gecko) "
+                "Chrome/124.0.0.0 Safari/537.36"
+            ),
+            "Accept": "*/*",
+        },
+    )
     try:
-        with urllib.request.urlopen(_NRC_ZIP_URL, timeout=60) as resp:
+        with urllib.request.urlopen(req, timeout=60) as resp:
             zip_bytes = resp.read()
     except Exception as exc:
         print(

@@ -64,30 +64,44 @@ class TestPredictor:
         loaded_model = joblib.load(str(pkl_path))
         assert isinstance(loaded_model, Pipeline)
 
-    def test_protocol_output_schema(self, mock_pipeline, tmp_path):
-        """Verifica que el Excel final tenga las columnas exactas."""
+    def test_protocol_output_schema_xlsx_input(self, mock_pipeline, tmp_path):
+        """Esquema A en .xlsx → CSV de salida con las columnas exactas."""
         model_path = tmp_path / "final_model.pkl"
         input_path = tmp_path / "input_test.xlsx"
-        
-        # Guardar el modelo en el path temporal
+
         save_pipeline(mock_pipeline, str(model_path))
-        
-        # Simular archivo de entrada de Reddit
+
         input_df = pd.DataFrame({
             'text_id': ['abc-123'],
             'title': ['Ayuda'],
             'text': ['No me siento bien']
         })
         input_df.to_excel(input_path, index=False)
-        
-        # Ejecutar predictor
+
         run_predictor(str(input_path), str(model_path))
-        
-        # Validar el archivo generado
-        assert os.path.exists('predicciones_finales.xlsx')
-        df_final = pd.read_excel('predicciones_finales.xlsx')
-        
-        # REQUISITO DEL PROTOCOLO: Nombres de columnas exactos
+
+        assert os.path.exists('predicciones_finales.csv')
+        df_final = pd.read_csv('predicciones_finales.csv')
+
         expected = ['text_id', 'predicted_label', 'probability_yes']
         assert list(df_final.columns) == expected
         assert df_final.iloc[0]['text_id'] == 'abc-123'
+
+    def test_schema_b_csv_input(self, mock_pipeline, tmp_path):
+        """Esquema B en .csv (tweet_id/tweet_text) también es aceptado."""
+        model_path = tmp_path / "final_model.pkl"
+        input_path = tmp_path / "input_test.csv"
+
+        save_pipeline(mock_pipeline, str(model_path))
+
+        pd.DataFrame({
+            'user_id': ['u1'],
+            'tweet_id': ['xyz-789'],
+            'tweet_text': ['hoy no he comido nada'],
+        }).to_csv(input_path, index=False)
+
+        run_predictor(str(input_path), str(model_path))
+
+        df_final = pd.read_csv('predicciones_finales.csv')
+        assert list(df_final.columns) == ['text_id', 'predicted_label', 'probability_yes']
+        assert df_final.iloc[0]['text_id'] == 'xyz-789'

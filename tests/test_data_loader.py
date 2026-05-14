@@ -29,7 +29,7 @@ from src.data_loader import DataLoader
 def _load_with_mock(df: pd.DataFrame) -> pd.DataFrame:
     """Llama a DataLoader.load() usando ``df`` como dato del archivo."""
     loader = DataLoader("fake_path.xlsx")
-    with patch.object(loader, "_read_excel", return_value=df):
+    with patch.object(loader, "_read_table", return_value=df):
         return loader.load()
 
 

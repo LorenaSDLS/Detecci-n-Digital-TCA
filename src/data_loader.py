@@ -14,6 +14,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Iterator
 
+import ftfy
 import pandas as pd
 from sklearn.model_selection import StratifiedKFold, train_test_split
 
@@ -58,6 +59,8 @@ class DataLoader:
     def load(self) -> pd.DataFrame:
         """Lee el archivo, valida el esquema y devuelve el DataFrame normalizado.
 
+        Soporta archivos ``.csv`` y ``.xlsx`` (detectado por extensión).
+
         Returns:
             DataFrame con columnas [user_id, text, label].
 
@@ -66,7 +69,7 @@ class DataLoader:
             ValueError: Si el esquema de columnas no es reconocido, si hay valores
                 de etiqueta desconocidos, o si el archivo queda vacío.
         """
-        raw = self._read_excel()
+        raw = self._read_table()
         return self._validate_and_normalize(raw)
 
     def train_val_split(
@@ -123,18 +126,26 @@ class DataLoader:
     # Métodos privados
     # ------------------------------------------------------------------
 
-    def _read_excel(self) -> pd.DataFrame:
-        """Lee el archivo .xlsx con el motor openpyxl.
+    def _read_table(self) -> pd.DataFrame:
+        """Lee el archivo de entrada, dispatcheando por extensión.
 
         Returns:
             DataFrame crudo con todas las columnas originales.
 
         Raises:
             FileNotFoundError: Si el archivo no existe.
+            ValueError: Si la extensión no es ``.csv``, ``.xlsx`` ni ``.xls``.
         """
         if not self.filepath.exists():
             raise FileNotFoundError(f"Archivo no encontrado: {self.filepath}")
-        return pd.read_excel(self.filepath, engine="openpyxl")
+        suffix = self.filepath.suffix.lower()
+        if suffix == ".csv":
+            return pd.read_csv(self.filepath)
+        if suffix in (".xlsx", ".xls"):
+            return pd.read_excel(self.filepath, engine="openpyxl")
+        raise ValueError(
+            f"Extensión no soportada: {suffix!r}. Use .csv o .xlsx."
+        )
 
     def _validate_and_normalize(self, df: pd.DataFrame) -> pd.DataFrame:
         """Detecta el esquema, normaliza columnas, mapea etiquetas y filtra filas vacías.
@@ -162,6 +173,14 @@ class DataLoader:
                 f"Se esperaba Esquema A {sorted(self._SCHEMA_A_REQUIRED)} "
                 f"o Esquema B {sorted(self._SCHEMA_B_REQUIRED)}."
             )
+
+        # Normalizar encoding (corrige mojibake como "azÃºcar" → "azúcar").
+        # ftfy.fix_text es idempotente. Se preservan los NaN para que el filtro
+        # de filas vacías que sigue los elimine de forma uniforme.
+        df = df.copy()
+        df["text"] = df["text"].map(
+            lambda x: ftfy.fix_text(x) if isinstance(x, str) else x
+        )
 
         # Eliminar filas con texto nulo o vacío
         df = df[df["text"].notna()]

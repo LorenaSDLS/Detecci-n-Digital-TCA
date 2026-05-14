@@ -143,12 +143,10 @@ credentials.json
 
 # ---- Machine Learning / Data Science ----
 datasets/
-data/
 raw/
 processed/
 interim/
 external/
-*.csv
 *.tsv
 *.parquet
 *.feather
@@ -202,3 +200,5 @@ tmp/
 *.pdf
 build/
 .tectonic-cache/
+
+output

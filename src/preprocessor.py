@@ -157,6 +157,21 @@ class Preprocessor:
         return results
 
     # ------------------------------------------------------------------
+    # API sklearn-compatible para usar dentro de un Pipeline
+    # ------------------------------------------------------------------
+
+    def fit(self, X, y=None):
+        """No-op: el preprocesador no aprende parámetros desde los datos."""
+        return self
+
+    def transform(self, X):
+        """Aplica ``preprocess_batch`` sobre cualquier iterable de textos."""
+        return self.preprocess_batch(list(X))
+
+    def fit_transform(self, X, y=None):
+        return self.transform(X)
+
+    # ------------------------------------------------------------------
     # Propiedad lazy para el modelo spaCy
     # ------------------------------------------------------------------
 
