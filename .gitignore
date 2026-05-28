@@ -159,7 +159,6 @@ external/
 *.joblib
 
 # Models and weights
-models/
 checkpoints/
 *.pt
 *.pth
