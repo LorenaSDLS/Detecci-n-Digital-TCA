@@ -21,6 +21,7 @@ class TestEvaluatePredictions:
         })
         res = compare.evaluate_predictions(gold, preds)
         assert res.auc == 1.0
+        assert res.f1 == 1.0
         assert (res.tp, res.tn, res.fp, res.fn) == (2, 2, 0, 0)
         assert res.fp_ids == [] and res.fn_ids == []
 
@@ -35,6 +36,7 @@ class TestEvaluatePredictions:
         assert res.fn_ids == ["a"]
         assert res.fp_ids == ["c"]
         assert (res.fp, res.fn) == (1, 1)
+        assert res.f1 == 0.5  # P=R=0.5 → F1=0.5 (TP=1, FP=1, FN=1)
 
     def test_join_on_text_id_subset(self):
         # La verdad-terreno tiene más muestras que las predicciones disponibles.

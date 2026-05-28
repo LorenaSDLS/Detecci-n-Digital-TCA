@@ -85,12 +85,12 @@ Genera en `output/`:
 
 ### Resultados (test fold oficial, 250 muestras)
 
-| Modelo | AUC-ROC | TP | TN | FP | FN |
-|---|---|---|---|---|---|
-| `robertuito_finetune` | **0.9817** | 129 | 101 | 15 | 5 |
-| `baseline_2b` | 0.9214 | 122 | 94 | 22 | 12 |
+| Modelo | AUC-ROC | F1 | TP | TN | FP | FN |
+|---|---|---|---|---|---|---|
+| `robertuito_finetune` | **0.9817** | **0.9281** | 129 | 101 | 15 | 5 |
+| `baseline_2b` | 0.9214 | 0.8777 | 122 | 94 | 22 | 12 |
 
-El fine-tuning de RoBERTuito supera al baseline clásico en ~6 puntos de AUC. La comparación es directa: ambos modelos se evalúan sobre las mismas 250 muestras de `data/data_test_fold1.csv`, unidas por `text_id`. El conjunto de prueba nunca se usa en entrenamiento ni en el early stopping, que emplea una partición de validación 80/20 estratificada del conjunto de entrenamiento. La cifra corresponde a un único fold; una validación con múltiples folds reforzaría la robustez del resultado.
+AUC-ROC es la métrica primaria del protocolo; F1 (clase positiva = anorexia) se reporta como secundaria. El fine-tuning de RoBERTuito supera al baseline clásico en ~6 puntos de AUC y ~5 de F1. La comparación es directa: ambos modelos se evalúan sobre las mismas 250 muestras de `data/data_test_fold1.csv`, unidas por `text_id`. El conjunto de prueba nunca se usa en entrenamiento ni en el early stopping, que emplea una partición de validación 80/20 estratificada del conjunto de entrenamiento. La cifra corresponde a un único fold; una validación con múltiples folds reforzaría la robustez del resultado.
 
 ## Reproducibilidad
 

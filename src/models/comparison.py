@@ -19,7 +19,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 import pandas as pd
-from sklearn.metrics import roc_auc_score
+from sklearn.metrics import f1_score, roc_auc_score
 
 from src.models.data import load_dataset, load_gold
 from src.models.registry import REGISTRY, ModelEntry
@@ -32,6 +32,7 @@ class ModelEvaluation:
     name: str
     description: str
     auc: float
+    f1: float
     n: int
     tp: int
     tn: int
@@ -71,6 +72,7 @@ def evaluate_predictions(gold: pd.DataFrame, preds: pd.DataFrame) -> ModelEvalua
         name="",
         description="",
         auc=float(roc_auc_score(y_true, y_prob)),
+        f1=float(f1_score(y_true, y_pred, zero_division=0)),
         n=len(merged),
         tp=int(((y_pred == 1) & (y_true == 1)).sum()),
         tn=int(((y_pred == 0) & (y_true == 0)).sum()),
@@ -155,12 +157,12 @@ def train_models(
 def print_table(evaluations: list[ModelEvaluation]) -> None:
     """Imprime la tabla comparativa ordenada por AUC descendente."""
     print("\n" + "=" * 78)
-    print("TABLA COMPARATIVA — AUC-ROC (métrica primaria)")
+    print("TABLA COMPARATIVA — AUC-ROC (primaria) · F1 (secundaria)")
     print("=" * 78)
-    print(f"{'modelo':<22}{'AUC':>8}{'N':>6}{'TP':>6}{'TN':>6}{'FP':>6}{'FN':>6}")
+    print(f"{'modelo':<22}{'AUC':>8}{'F1':>8}{'N':>6}{'TP':>6}{'TN':>6}{'FP':>6}{'FN':>6}")
     print("-" * 78)
     for r in evaluations:
-        print(f"{r.name:<22}{r.auc:>8.4f}{r.n:>6}{r.tp:>6}{r.tn:>6}{r.fp:>6}{r.fn:>6}")
+        print(f"{r.name:<22}{r.auc:>8.4f}{r.f1:>8.4f}{r.n:>6}{r.tp:>6}{r.tn:>6}{r.fp:>6}{r.fn:>6}")
     print("-" * 78)
     if evaluations:
         best = evaluations[0]
@@ -174,6 +176,7 @@ def write_comparison(evaluations: list[ModelEvaluation], output_dir: Path) -> Pa
             "modelo": r.name,
             "descripcion": r.description,
             "auc_roc": r.auc,
+            "f1": r.f1,
             "n": r.n,
             "tp": r.tp,
             "tn": r.tn,
