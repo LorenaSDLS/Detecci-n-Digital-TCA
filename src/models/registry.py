@@ -64,6 +64,6 @@ REGISTRY: list[ModelEntry] = [
         name="nli_zeroshot",
         predictions_file="predicciones_nli_zeroshot.csv",
         factory=ZeroShotNLI,
-        description="Fase 3c — zero-shot con modelo NLI (pendiente)",
+        description="Fase 3c — zero-shot con modelo NLI",
     ),
 ]

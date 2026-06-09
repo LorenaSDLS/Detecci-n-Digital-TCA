@@ -152,13 +152,22 @@ class TestRegistry:
         with pytest.raises(NotImplementedError):
             RoBERTuitoSVM().run(train, test, tmp_path)
 
-    def test_zeroshot_placeholder_raises_at_predict(self, tmp_path):
-        train = pd.DataFrame({"text_id": ["a"], "text": ["x"], "label": [1]})
-        test = pd.DataFrame({"text_id": ["t1"], "text": ["a"]})
+    def test_zeroshot_metadata_and_noop_fit(self):
         z = ZeroShotNLI()
-        assert z.fit([], []) is z  # fit es no-op (zero-shot)
-        with pytest.raises(NotImplementedError):
-            z.run(train, test, tmp_path)
+        assert z.name == "nli_zeroshot"
+        assert z.model_name == "Recognai/bert-base-spanish-wwm-cased-xnli"
+        assert z.hypothesis_template == "Este texto trata sobre {}."
+        assert z.fit([], []) is z  # fit es no-op (zero-shot), encadenable.
+
+    def test_zeroshot_positive_score_picks_positive_label(self):
+        # _positive_score es puro (no requiere transformers): recupera el score
+        # de positive_label por su posición en las labels ordenadas del pipeline.
+        z = ZeroShotNLI()
+        result = {
+            "labels": [z.negative_label, z.positive_label],
+            "scores": [0.7, 0.3],
+        }
+        assert z._positive_score(result) == pytest.approx(0.3)
 
 
 # ---------------------------------------------------------------------------
