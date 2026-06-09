@@ -58,7 +58,7 @@ REGISTRY: list[ModelEntry] = [
         name="robertuito_svm",
         predictions_file="predicciones_robertuito_svm.csv",
         factory=RoBERTuitoSVM,
-        description="Fase 3b — embeddings RoBERTuito + SVM (pendiente)",
+        description="Fase 3b — embeddings RoBERTuito + SVM (checar)",
     ),
     ModelEntry(
         name="nli_zeroshot",
