@@ -146,11 +146,52 @@ class TestRegistry:
         assert m.model_name == "pysentimiento/robertuito-base-uncased"
         assert m.lr == 2e-5 and m.batch_size == 16 and m.epochs == 4
 
-    def test_embeddings_svm_placeholder_raises(self, tmp_path):
-        train = pd.DataFrame({"text_id": ["a"], "text": ["x"], "label": [1]})
-        test = pd.DataFrame({"text_id": ["t1"], "text": ["a"]})
-        with pytest.raises(NotImplementedError):
-            RoBERTuitoSVM().run(train, test, tmp_path)
+  
+
+    def test_embeddings_svm_metadata_without_transformers(self):
+        m = RoBERTuitoSVM()
+        assert m.name == "robertuito_svm"
+        assert m.model_name == "pysentimiento/robertuito-base-uncased"
+        assert m.max_length == 128
+        assert m.seed == 42
+    
+    def test_embeddings_svm_run_with_mocked_embeddings(self, tmp_path, monkeypatch):
+        train = pd.DataFrame({
+            "text_id": ["a", "b", "c", "d"],
+            "text": [
+                "riesgo tca uno",
+                "riesgo tca dos",
+                "control uno",
+                "control dos",
+        ],
+            "label": [1, 1, 0, 0],
+        })
+
+        test = pd.DataFrame({
+            "text_id": ["t1", "t2"],
+            "text": ["riesgo tca prueba", "control prueba"],
+        })
+
+        def fake_extract_embeddings(self, texts):
+            vectors = []
+            for text in texts:
+                if "riesgo" in text:
+                    vectors.append([2.0, 2.0, 1.5])
+                else:
+                    vectors.append([-2.0, -2.0, -1.5])
+            return np.asarray(vectors, dtype=np.float32)
+
+        monkeypatch.setattr(RoBERTuitoSVM, "_load_transformer", lambda self: None)
+        monkeypatch.setattr(RoBERTuitoSVM, "_extract_embeddings", fake_extract_embeddings)
+
+        path = RoBERTuitoSVM().run(train, test, tmp_path)
+
+        out = pd.read_csv(path)
+
+        assert path.name == "predicciones_robertuito_svm.csv"
+        assert list(out.columns) == ["text_id", "predicted_label", "probability_yes"]
+        assert out["text_id"].tolist() == ["t1", "t2"]
+        assert out["probability_yes"].between(0, 1).all()
 
     def test_zeroshot_placeholder_raises_at_predict(self, tmp_path):
         train = pd.DataFrame({"text_id": ["a"], "text": ["x"], "label": [1]})
