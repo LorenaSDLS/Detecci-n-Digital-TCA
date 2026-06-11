@@ -13,11 +13,18 @@ mismo conjunto de verdad-terreno.
 
 from __future__ import annotations
 
+import re
 from pathlib import Path
 
 import ftfy
 import pandas as pd
 from sklearn.model_selection import train_test_split
+
+# Un hashtag es ``#`` seguido de caracteres de palabra (incluye vocales
+# acentuadas con re.UNICODE). Se comparte entre el loader, el script de limpieza
+# y la generación de la variante "sin hashtags" para tener una sola definición.
+_HASHTAG_RE = re.compile(r"#\w+", re.UNICODE)
+_WHITESPACE_RE = re.compile(r"\s+", re.UNICODE)
 
 # Esquema A (protocolo): id propio + título + cuerpo + etiqueta textual.
 _SCHEMA_A_REQUIRED: frozenset[str] = frozenset({"text_id", "title", "text", "label"})
@@ -103,6 +110,18 @@ def stratified_split(
 def load_gold(filepath: str | Path) -> pd.DataFrame:
     """Verdad-terreno para ``compare.py``: ``[text_id, label]`` del set de prueba."""
     return load_dataset(filepath)[["text_id", "label"]]
+
+
+def strip_hashtags_text(text: str) -> str:
+    """Elimina los hashtags (``#palabra``) de un texto y normaliza espacios.
+
+    Base de la variante "sin hashtags": al quitar las etiquetas de comunidad
+    (``#thinspo``, ``#proana``, ``#fit``…) se evalúa al modelo sin las pistas
+    léxicas que separan trivialmente las clases.
+    """
+    if not isinstance(text, str):
+        return ""
+    return _WHITESPACE_RE.sub(" ", _HASHTAG_RE.sub(" ", text)).strip()
 
 
 def _read_table(filepath: str | Path) -> pd.DataFrame:

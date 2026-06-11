@@ -125,20 +125,42 @@ class TestRunContract:
 # ---------------------------------------------------------------------------
 
 class TestRegistry:
-    def test_catalog_has_baseline_and_three_variants(self):
+
+    def test_catalog_lists_all_methods(self):
         names = [e.name for e in REGISTRY]
-        assert names == ["baseline_2b", "robertuito_finetune", "robertuito_svm", "nli_zeroshot"]
+        assert names == [
+            "baseline_2b",
+            "baseline_clasico",
+            "robertuito_finetune",
+            "robertuito_svm",
+            "nli_zeroshot",
+            "llm_groq",
+        ]
+
+    def test_matrix_has_five_methods(self):
+        # La matriz método×variante cubre exactamente 5 métodos (×2 variantes = 10).
+        matrix = [e.name for e in REGISTRY if e.in_matrix]
+        assert matrix == [
+            "baseline_clasico",
+            "robertuito_finetune",
+            "robertuito_svm",
+            "nli_zeroshot",
+            "llm_groq",
+        ]
 
     def test_baseline_is_not_trainable(self):
         baseline = next(e for e in REGISTRY if e.name == "baseline_2b")
         assert not baseline.is_trainable
         assert baseline.predictions_file == "predicciones_finales.csv"
+        assert not baseline.in_matrix
 
     def test_variant_filenames_match_run_output(self):
         # base.run() escribe predicciones_<name>.csv → debe coincidir con el registro.
         for entry in REGISTRY:
             if entry.is_trainable:
-                assert entry.predictions_file == f"predicciones_{entry.factory().name}.csv"
+                assert (
+                    entry.predictions_file == f"predicciones_{entry.factory().name}.csv"
+                )
 
     def test_finetuner_metadata_without_torch(self):
         m = RoBERTuitoFineTuner()
@@ -146,15 +168,13 @@ class TestRegistry:
         assert m.model_name == "pysentimiento/robertuito-base-uncased"
         assert m.lr == 2e-5 and m.batch_size == 16 and m.epochs == 4
 
-  
-
     def test_embeddings_svm_metadata_without_transformers(self):
         m = RoBERTuitoSVM()
         assert m.name == "robertuito_svm"
         assert m.model_name == "pysentimiento/robertuito-base-uncased"
         assert m.max_length == 128
         assert m.seed == 42
-    
+
     def test_embeddings_svm_run_with_mocked_embeddings(self, tmp_path, monkeypatch):
         train = pd.DataFrame({
             "text_id": ["a", "b", "c", "d"],

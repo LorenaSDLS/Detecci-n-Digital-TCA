@@ -21,8 +21,10 @@ from dataclasses import dataclass
 from typing import Callable, Optional
 
 from src.models.base import AnorexiaClassifier
+from src.models.baseline_classic import ClassicBaseline
 from src.models.embeddings_svm import RoBERTuitoSVM
 from src.models.finetuning import RoBERTuitoFineTuner
+from src.models.llm_groq import GroqLLMClassifier
 from src.models.zeroshot_nli import ZeroShotNLI
 
 
@@ -34,6 +36,7 @@ class ModelEntry:
     predictions_file: str
     factory: Optional[Callable[[], AnorexiaClassifier]]
     description: str
+    in_matrix: bool = False  # ¿participa en la matriz método×variante (5 métodos)?
 
     @property
     def is_trainable(self) -> bool:
@@ -46,24 +49,41 @@ REGISTRY: list[ModelEntry] = [
         name="baseline_2b",
         predictions_file="predicciones_finales.csv",
         factory=None,  # baseline intacto: sólo se lee su archivo de Fase 2B.
-        description="Fase 2B — TF-IDF/BoW multivista + clasificador clásico (baseline)",
+        description="Fase 2B — TF-IDF/BoW multivista + clasificador clásico (baseline congelado)",
+    ),
+    ModelEntry(
+        name="baseline_clasico",
+        predictions_file="predicciones_baseline_clasico.csv",
+        factory=ClassicBaseline,
+        description="Baseline — pipeline multivista de Fase 2B (reentrenable por variante)",
+        in_matrix=True,
     ),
     ModelEntry(
         name="robertuito_finetune",
         predictions_file="predicciones_robertuito_finetune.csv",
         factory=RoBERTuitoFineTuner,
         description="Fase 3a — fine-tuning de RoBERTuito",
+        in_matrix=True,
     ),
     ModelEntry(
         name="robertuito_svm",
         predictions_file="predicciones_robertuito_svm.csv",
         factory=RoBERTuitoSVM,
-        description="Fase 3b — embeddings RoBERTuito + SVM (checar)",
+        description="Fase 3b — embeddings RoBERTuito + SVM",
+        in_matrix=True,
     ),
     ModelEntry(
         name="nli_zeroshot",
         predictions_file="predicciones_nli_zeroshot.csv",
         factory=ZeroShotNLI,
         description="Fase 3c — zero-shot con modelo NLI",
+        in_matrix=True,
+    ),
+    ModelEntry(
+        name="llm_groq",
+        predictions_file="predicciones_llm_groq.csv",
+        factory=GroqLLMClassifier,
+        description="Fase 3d — LLM zero-shot vía Groq (modelo configurable, GROQ_MODEL)",
+        in_matrix=True,
     ),
 ]

@@ -201,3 +201,5 @@ build/
 .tectonic-cache/
 
 output
+
+data/*_nohashtags.csv

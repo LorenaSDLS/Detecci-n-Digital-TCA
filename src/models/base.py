@@ -60,6 +60,27 @@ class AnorexiaClassifier(ABC):
         """
         raise NotImplementedError
 
+    def config(self) -> dict:
+        """Configuración pública serializable (hiperparámetros) del método.
+
+        Base de la huella de caché (ver ``src.models.cache``): cualquier cambio
+        en estos valores invalida las predicciones guardadas. Por defecto recoge
+        los atributos públicos escalares de la instancia; las subclases pueden
+        sobreescribirlo si necesitan un control más fino.
+
+        Returns:
+            Diccionario JSON-serializable ``{atributo: valor}``.
+        """
+        out: dict = {}
+        for key, value in vars(self).items():
+            if key.startswith("_"):
+                continue
+            if isinstance(value, Path):
+                out[key] = str(value)
+            elif isinstance(value, (str, int, float, bool)) or value is None:
+                out[key] = value
+        return out
+
     def run(
         self,
         train_df: pd.DataFrame,
