@@ -18,13 +18,17 @@ Herramienta de procesamiento de lenguaje natural para la detección de indicios 
 │   └── models/             Variantes de vanguardia y comparador (Fase 3)
 │       ├── base.py             Interfaz común (AnorexiaClassifier)
 │       ├── data.py             Loader que preserva text_id + split estratificado
-│       ├── finetuning.py       Fine-tuning de RoBERTuito (implementado)
-│       ├── embeddings_svm.py   Embeddings RoBERTuito + SVM (pendiente)
-│       ├── zeroshot_nli.py     Zero-shot con modelo NLI (pendiente)
+│       ├── baseline_classic.py Baseline de Fase 2B reentrenable por variante
+│       ├── finetuning.py       Fine-tuning de RoBERTuito
+│       ├── embeddings_svm.py   Embeddings RoBERTuito congelado + SVM calibrado
+│       ├── zeroshot_nli.py     Zero-shot con modelo NLI en español
+│       ├── llm_groq.py         LLM zero-shot vía Groq (modelo configurable)
+│       ├── variants.py         Variantes de datos con/sin hashtags
+│       ├── cache.py            Caché de predicciones por método y variante
 │       ├── registry.py         Catálogo baseline + variantes
-│       ├── comparison.py       AUC + análisis FP/FN
+│       ├── comparison.py       AUC + análisis FP/FN + matriz comparativa
 │       └── __main__.py         Orquestador CLI (python -m src.models)
-├── tests/                  Suite de 168 pruebas unitarias
+├── tests/                  Suite de 171 pruebas unitarias
 ├── data/                   Corpus de entrenamiento, prueba y lexicones
 ├── scripts/                Utilidades auxiliares
 ├── output/                 Artefactos generados (curva ROC, modelo, predicciones, comparativas)
@@ -57,15 +61,17 @@ Regresión Logística con regularización L2 (`solver=liblinear`, `C` optimizada
 
 La Fase 3 añade variantes basadas en modelos de lenguaje y las compara contra el baseline de Fase 2B por AUC-ROC sobre el mismo conjunto de prueba. **El baseline permanece intacto**: se consume su archivo `output/predicciones_finales.csv` sin reentrenarlo.
 
-Todas las variantes viven en el paquete `src/models/` bajo una interfaz común (`AnorexiaClassifier`); cada nueva variante solo implementa `fit` y `predict_proba`, mientras que la escritura de predicciones en el esquema unificado (`text_id, predicted_label, probability_yes`) y la comparación son compartidas. Así, las variantes pendientes se integran sin refactorizar el orquestador.
+Todas las variantes viven en el paquete `src/models/` bajo una interfaz común (`AnorexiaClassifier`); cada nueva variante solo implementa `fit` y `predict_proba`, mientras que la escritura de predicciones en el esquema unificado (`text_id, predicted_label, probability_yes`) y la comparación son compartidas. Así, nuevas variantes se integran sin refactorizar el orquestador.
 
-| Variante | Estado | Descripción |
-|---|---|---|
-| `robertuito_finetune` | ✅ Implementada | Fine-tuning de `pysentimiento/robertuito-base-uncased` con `Trainer` y early stopping por AUC de validación |
-| `robertuito_svm` | ⏳ Pendiente | Embeddings de RoBERTuito congelado + SVM calibrado |
-| `nli_zeroshot` | ⏳ Pendiente | Clasificación zero-shot con un modelo NLI en español |
+| Método | Descripción |
+|---|---|
+| `baseline_clasico` | Pipeline multivista de Fase 2B, reentrenable por variante |
+| `robertuito_finetune` | Fine-tuning de `pysentimiento/robertuito-base-uncased` con `Trainer` y early stopping por AUC de validación |
+| `robertuito_svm` | Embeddings de RoBERTuito congelado + SVM calibrado |
+| `nli_zeroshot` | Clasificación zero-shot con un modelo NLI en español |
+| `llm_groq` | LLM zero-shot vía Groq, modelo configurable con `GROQ_MODEL` |
 
-Las dependencias pesadas (`torch`, `transformers`, `datasets`, `pysentimiento`) se importan de forma diferida: el paquete y el comparador funcionan sin tenerlas instaladas; solo el entrenamiento de las variantes las requiere.
+Las dependencias pesadas (`torch`, `transformers`, `datasets`, `pysentimiento`) se importan de forma diferida: el paquete y el comparador funcionan sin tenerlas instaladas; solo el entrenamiento de las variantes las requiere. El método `llm_groq` necesita una clave de API en un archivo `.env` (`GROQ_API_KEY`; ver `.env.example`).
 
 ### Uso
 
@@ -75,22 +81,37 @@ uv run python -m src.models train --model robertuito_finetune
 
 # Comparar únicamente las predicciones ya generadas:
 uv run python -m src.models compare
+
+# Matriz: los métodos sobre dos variantes de los datos (con y sin hashtags):
+uv run python -m src.models matrix --test-file data/data_test_fold2.csv
 ```
 
-Genera en `output/`:
+`train`/`compare` generan `predicciones_<variante>.csv`, `comparativa_fase3.csv` (tabla AUC-ROC) y `analisis_errores_fase3.csv` (FP/FN por modelo). La matriz escribe sus resultados en `output/matriz/<fold>/`. Cada par (método, variante) se cachea por una huella de los datos, la configuración y el código fuente, así que volver a correr la matriz solo recomputa lo que cambió.
 
-- `predicciones_<variante>.csv` — predicciones de cada variante (mismo esquema que el baseline).
-- `comparativa_fase3.csv` — tabla AUC-ROC de todos los métodos disponibles.
-- `analisis_errores_fase3.csv` — falsos positivos / falsos negativos por modelo (IDs y conteos).
+### Resultados
 
-### Resultados (test fold oficial, 250 muestras)
+Comparación directa sobre las mismas 250 muestras de prueba, unidas por `text_id`. El conjunto de prueba nunca se usa en entrenamiento ni en el early stopping, que emplea una partición de validación 80/20 estratificada del conjunto de entrenamiento. Cada cifra corresponde a un único fold; una validación con varios folds reforzaría la robustez.
 
 | Modelo | AUC-ROC | F1 | TP | TN | FP | FN |
 |---|---|---|---|---|---|---|
 | `robertuito_finetune` | **0.9817** | **0.9281** | 129 | 101 | 15 | 5 |
 | `baseline_2b` | 0.9214 | 0.8777 | 122 | 94 | 22 | 12 |
 
-AUC-ROC es la métrica primaria del protocolo; F1 (clase positiva = anorexia) se reporta como secundaria. El fine-tuning de RoBERTuito supera al baseline clásico en ~6 puntos de AUC y ~5 de F1. La comparación es directa: ambos modelos se evalúan sobre las mismas 250 muestras de `data/data_test_fold1.csv`, unidas por `text_id`. El conjunto de prueba nunca se usa en entrenamiento ni en el early stopping, que emplea una partición de validación 80/20 estratificada del conjunto de entrenamiento. La cifra corresponde a un único fold; una validación con múltiples folds reforzaría la robustez del resultado.
+(`data/data_test_fold1.csv`. AUC-ROC es la métrica primaria; F1, con clase positiva = anorexia, la secundaria.)
+
+#### Con y sin hashtags
+
+Las publicaciones pro-ana usan hashtags de comunidad (`#thinspo`, `#proana`…) casi exclusivos de la clase positiva, que podrían funcionar como atajo. La variante «sin hashtags» los elimina del texto para medir cuánto depende cada método de ellos. Matriz sobre `data/data_test_fold2.csv` (250 muestras; `llm_groq` con `llama-3.3-70b-versatile`):
+
+| Método | AUC con | AUC sin | Δ |
+|---|---|---|---|
+| `robertuito_finetune` | 0.9819 | 0.9600 | −0.022 |
+| `robertuito_svm` | 0.9641 | 0.9278 | −0.036 |
+| `baseline_clasico` | 0.9527 | 0.9236 | −0.029 |
+| `llm_groq` | 0.9166 | 0.8964 | −0.020 |
+| `nli_zeroshot` | 0.7464 | 0.6494 | −0.097 |
+
+Quitar los hashtags apenas reduce el AUC de los modelos supervisados (Δ ≈ 0.02–0.04): la señal proviene sobre todo del contenido léxico del texto, no de las etiquetas de comunidad. El zero-shot NLI es el más dependiente de los hashtags; el LLM, el más robusto. Una evaluación más estricta eliminaría también términos de contenido (`scripts/strip_hashtags.py --strip-keywords`).
 
 ## Reproducibilidad
 
@@ -116,7 +137,7 @@ El pipeline produce en `output/`:
 uv run pytest
 ```
 
-168 pruebas unitarias. Cobertura del baseline (Fase 2B): validación de esquemas, manejo de errores, normalización de texto, extracción de cada vista, fusión multi-vista, comparación de clasificadores, métricas y serialización. Cobertura de la infraestructura de Fase 3: loader que preserva `text_id`, contrato `run()` de la interfaz común, catálogo de variantes y lógica de comparación (AUC + análisis FP/FN). Las pruebas de Fase 3 no requieren `torch` (importación diferida).
+171 pruebas unitarias. Cobertura del baseline (Fase 2B): validación de esquemas, manejo de errores, normalización de texto, extracción de cada vista, fusión multi-vista, comparación de clasificadores, métricas y serialización. Cobertura de la infraestructura de Fase 3: loader que preserva `text_id`, contrato `run()` de la interfaz común, catálogo de variantes y lógica de comparación (AUC + análisis FP/FN). Las pruebas de Fase 3 no requieren `torch` (importación diferida).
 
 ## Optimizaciones aplicadas
 
