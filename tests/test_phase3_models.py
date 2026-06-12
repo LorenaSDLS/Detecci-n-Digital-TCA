@@ -133,19 +133,25 @@ class TestRegistry:
             "baseline_clasico",
             "robertuito_finetune",
             "robertuito_svm",
+            "robertuito_logreg",
+            "robertuito_xgb",
             "nli_zeroshot",
             "llm_groq",
+            "llm_groq_fewshot",
         ]
 
-    def test_matrix_has_five_methods(self):
-        # La matriz método×variante cubre exactamente 5 métodos (×2 variantes = 10).
+    def test_matrix_methods(self):
+        # La matriz método×variante cubre estos métodos (×2 variantes de datos).
         matrix = [e.name for e in REGISTRY if e.in_matrix]
         assert matrix == [
             "baseline_clasico",
             "robertuito_finetune",
             "robertuito_svm",
+            "robertuito_logreg",
+            "robertuito_xgb",
             "nli_zeroshot",
             "llm_groq",
+            "llm_groq_fewshot",
         ]
 
     def test_baseline_is_not_trainable(self):
@@ -229,6 +235,63 @@ class TestRegistry:
             "scores": [0.7, 0.3],
         }
         assert z._positive_score(result) == pytest.approx(0.3)
+
+    def test_embeddings_heads_naming_and_validation(self):
+        assert RoBERTuitoSVM(head="logreg").name == "robertuito_logreg"
+        assert RoBERTuitoSVM(head="xgb").name == "robertuito_xgb"
+        with pytest.raises(ValueError, match="Cabeza desconocida"):
+            RoBERTuitoSVM(head="mlp")
+
+    def test_embeddings_heads_predict_proba_with_mocked_embeddings(self, monkeypatch):
+        # Las tres cabezas deben producir probabilidades válidas sobre los
+        # mismos embeddings sintéticos (separables linealmente).
+        def fake_extract(self, texts):
+            return np.asarray(
+                [[2.0, 1.5] if "riesgo" in t else [-2.0, -1.5] for t in texts],
+                dtype=np.float32,
+            )
+
+        monkeypatch.setattr(RoBERTuitoSVM, "_extract_embeddings", fake_extract)
+        texts = ["riesgo a", "riesgo b", "sano a", "sano b"] * 3
+        labels = [1, 1, 0, 0] * 3
+        for head in ("svm", "logreg", "xgb"):
+            model = RoBERTuitoSVM(head=head).fit(texts, labels)
+            probs = model.predict_proba(["riesgo nuevo", "sano nuevo"])
+            assert probs.shape == (2,)
+            assert ((probs >= 0) & (probs <= 1)).all()
+            assert probs[0] > probs[1]  # el texto de riesgo recibe mayor P(anorexia)
+
+
+# ---------------------------------------------------------------------------
+# llm_groq.py — few-shot (sin API: sólo selección de ejemplos y claves de caché)
+# ---------------------------------------------------------------------------
+
+class TestGroqFewShot:
+    def _make(self, **kwargs):
+        from src.models.llm_groq import GroqLLMClassifier
+        return GroqLLMClassifier(**kwargs)
+
+    def test_names_by_mode(self):
+        assert self._make().name == "llm_groq"
+        assert self._make(examples_per_class=4).name == "llm_groq_fewshot"
+
+    def test_example_selection_is_balanced_and_deterministic(self):
+        texts = [f"anorexia {i}" for i in range(10)] + [f"control {i}" for i in range(10)]
+        labels = [1] * 10 + [0] * 10
+        a = self._make(examples_per_class=3).fit(texts, labels)
+        b = self._make(examples_per_class=3).fit(texts, labels)
+        assert a._examples == b._examples  # misma semilla → misma selección
+        assert sum(1 for _, l in a._examples if l == 1) == 3
+        assert sum(1 for _, l in a._examples if l == 0) == 3
+
+    def test_cache_keys_differ_between_zero_and_few_shot(self):
+        texts = ["ejemplo anorexia"], [1]
+        zero = self._make()
+        few = self._make(examples_per_class=1).fit(["a", "b"], [1, 0])
+        assert zero._cache_key("hola") != few._cache_key("hola")
+        # Y el bloque de ejemplos sólo aparece en few-shot.
+        assert zero._examples_block() == ""
+        assert "Ejemplos etiquetados" in few._examples_block()
 
 
 # ---------------------------------------------------------------------------

@@ -22,7 +22,7 @@ from typing import Callable, Optional
 
 from src.models.base import AnorexiaClassifier
 from src.models.baseline_classic import ClassicBaseline
-from src.models.embeddings_svm import RoBERTuitoSVM
+from src.models.embeddings_svm import RoBERTuitoEmbeddings
 from src.models.finetuning import RoBERTuitoFineTuner
 from src.models.llm_groq import GroqLLMClassifier
 from src.models.zeroshot_nli import ZeroShotNLI
@@ -68,8 +68,22 @@ REGISTRY: list[ModelEntry] = [
     ModelEntry(
         name="robertuito_svm",
         predictions_file="predicciones_robertuito_svm.csv",
-        factory=RoBERTuitoSVM,
-        description="Fase 3b — embeddings RoBERTuito + SVM",
+        factory=RoBERTuitoEmbeddings,  # head="svm" por defecto
+        description="Fase 3b — embeddings RoBERTuito + SVM calibrado",
+        in_matrix=True,
+    ),
+    ModelEntry(
+        name="robertuito_logreg",
+        predictions_file="predicciones_robertuito_logreg.csv",
+        factory=lambda: RoBERTuitoEmbeddings(head="logreg"),
+        description="Fase 3b — embeddings RoBERTuito + regresión logística",
+        in_matrix=True,
+    ),
+    ModelEntry(
+        name="robertuito_xgb",
+        predictions_file="predicciones_robertuito_xgb.csv",
+        factory=lambda: RoBERTuitoEmbeddings(head="xgb"),
+        description="Fase 3b — embeddings RoBERTuito + XGBoost",
         in_matrix=True,
     ),
     ModelEntry(
@@ -84,6 +98,13 @@ REGISTRY: list[ModelEntry] = [
         predictions_file="predicciones_llm_groq.csv",
         factory=GroqLLMClassifier,
         description="Fase 3d — LLM zero-shot vía Groq (modelo configurable, GROQ_MODEL)",
+        in_matrix=True,
+    ),
+    ModelEntry(
+        name="llm_groq_fewshot",
+        predictions_file="predicciones_llm_groq_fewshot.csv",
+        factory=lambda: GroqLLMClassifier(examples_per_class=4),
+        description="Fase 3d — LLM few-shot vía Groq (8 ejemplos del train, 4 por clase)",
         in_matrix=True,
     ),
 ]

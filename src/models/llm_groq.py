@@ -1,9 +1,14 @@
 """llm_groq.py — Variante (d) de Fase 3: clasificación con un LLM vía Groq.
 
-Clasifica cada texto preguntándole a un modelo servido por Groq
-(``openai/gpt-oss-20b`` por defecto) si su autor muestra señales de anorexia/TCA.
-Es zero-shot: ``fit`` no entrena nada. ``predict_proba`` devuelve P(anorexia)
-en [0, 1] a partir de la respuesta del modelo.
+Clasifica cada texto preguntándole a un modelo servido por Groq si su autor
+muestra señales de anorexia/TCA. ``predict_proba`` devuelve P(anorexia) en
+[0, 1] a partir de la respuesta del modelo.
+
+Dos modos, según ``examples_per_class``:
+  * ``0`` (zero-shot, ``llm_groq``): el prompt no incluye ejemplos; ``fit`` es no-op.
+  * ``>0`` (few-shot, ``llm_groq_fewshot``): ``fit`` selecciona N ejemplos por clase
+    del conjunto de ENTRENAMIENTO (nunca del test), balanceados y con semilla fija,
+    y se anteponen al prompt como demostraciones etiquetadas.
 
 Configuración por ``.env`` (cargado con python-dotenv):
   * ``GROQ_API_KEY``  — clave de API (obligatoria).
@@ -78,10 +83,10 @@ class GroqLLMClassifier(AnorexiaClassifier):
             ≈ 30 en free tier). Override por env ``GROQ_RPM``.
         batch_size: Textos por petición. >1 multiplica el rendimiento dentro del
             límite de tasa (el tope de Groq es por petición). Override ``GROQ_BATCH``.
+        examples_per_class: Ejemplos del train por clase en el prompt (0 = zero-shot).
+        example_seed: Semilla para la selección determinista de ejemplos.
         prompt_version: Versión del prompt (parte de la clave de caché).
     """
-
-    name = "llm_groq"
 
     def __init__(
         self,
@@ -91,6 +96,8 @@ class GroqLLMClassifier(AnorexiaClassifier):
         cache_path: str = "output/cache_llm_groq.json",
         requests_per_minute: int | None = None,
         batch_size: int | None = None,
+        examples_per_class: int = 0,
+        example_seed: int = 42,
     ) -> None:
         # Cargar .env ANTES de leer las variables, para que GROQ_MODEL/GROQ_RPM/etc.
         # del archivo tengan efecto (si no, __init__ usaría sólo el shell/los defaults).
@@ -103,6 +110,9 @@ class GroqLLMClassifier(AnorexiaClassifier):
         self.cache_path = cache_path
         self.requests_per_minute = requests_per_minute or int(os.environ.get("GROQ_RPM", "30"))
         self.batch_size = batch_size or int(os.environ.get("GROQ_BATCH", "10"))
+        self.examples_per_class = examples_per_class
+        self.example_seed = example_seed
+        self.name = "llm_groq_fewshot" if examples_per_class > 0 else "llm_groq"
         self.prompt_version = _PROMPT_VERSION
 
         # Intervalo mínimo entre llamadas para no exceder el plan.
@@ -110,21 +120,46 @@ class GroqLLMClassifier(AnorexiaClassifier):
         self._last_call = 0.0  # marca de tiempo monotónica de la última llamada
         self._client = None
         self._cache: dict[str, float] | None = None
+        self._examples: list[tuple[str, int]] = []  # [(texto, etiqueta)] del train
 
     def config(self) -> dict:
         """Sólo lo que afecta la PREDICCIÓN entra en la huella de caché.
 
-        ``cache_path``/``max_retries``/``request_pause`` no cambian la salida, así
-        que se omiten para no invalidar la caché al ajustarlos.
+        ``cache_path``/``max_retries`` no cambian la salida, así que se omiten
+        para no invalidar la caché al ajustarlos.
         """
         return {
             "model": self.model,
             "temperature": self.temperature,
             "prompt_version": self.prompt_version,
+            "examples_per_class": self.examples_per_class,
+            "example_seed": self.example_seed,
         }
 
     def fit(self, texts: list[str], labels: list[int]) -> "GroqLLMClassifier":
-        # Zero-shot: el LLM no se entrena.
+        """Zero-shot: no-op. Few-shot: selecciona ejemplos balanceados del train.
+
+        La selección es determinista (semilla fija) e intercala las clases para
+        no sesgar al modelo hacia la última etiqueta vista.
+        """
+        if self.examples_per_class <= 0:
+            return self
+
+        rng = np.random.default_rng(self.example_seed)
+        by_class: dict[int, list[str]] = {1: [], 0: []}
+        for text, label in zip(texts, labels):
+            if isinstance(text, str) and text.strip():
+                by_class[int(label)].append(text)
+
+        picked: dict[int, list[str]] = {}
+        for cls, pool in by_class.items():
+            k = min(self.examples_per_class, len(pool))
+            idx = rng.choice(len(pool), size=k, replace=False)
+            picked[cls] = [pool[i] for i in idx]
+
+        self._examples = []
+        for ano, con in zip(picked.get(1, []), picked.get(0, [])):
+            self._examples.extend([(ano, 1), (con, 0)])
         return self
 
     def predict_proba(self, texts: list[str]) -> np.ndarray:
@@ -146,7 +181,7 @@ class GroqLLMClassifier(AnorexiaClassifier):
                 pending.append((key, text))
 
         if pending:
-            print(f"  [llm_groq] {len(pending)} textos nuevos · lote={self.batch_size} "
+            print(f"  [{self.name}] {len(pending)} textos nuevos · lote={self.batch_size} "
                   f"· ~{self.requests_per_minute} req/min")
         for start in range(0, len(pending), self.batch_size):
             chunk = pending[start:start + self.batch_size]
@@ -154,7 +189,7 @@ class GroqLLMClassifier(AnorexiaClassifier):
             for (key, _), prob in zip(chunk, results):
                 cache[key] = prob
             self._save_cache(cache)
-            print(f"  [llm_groq] {min(start + len(chunk), len(pending))}/{len(pending)} "
+            print(f"  [{self.name}] {min(start + len(chunk), len(pending))}/{len(pending)} "
                   f"clasificados; caché total {len(cache)}")
 
         return np.asarray([cache[key] for key in keys], dtype=float)
@@ -171,7 +206,8 @@ class GroqLLMClassifier(AnorexiaClassifier):
         messages = [
             {"role": "system", "content": _SYSTEM_PROMPT},
             # Acotamos el texto para no exceder el contexto en posts muy largos.
-            {"role": "user", "content": _USER_TEMPLATE.format(text=text[:4000])},
+            {"role": "user",
+             "content": self._examples_block() + _USER_TEMPLATE.format(text=text[:4000])},
         ]
 
         for attempt in range(self.max_retries):
@@ -207,7 +243,8 @@ class GroqLLMClassifier(AnorexiaClassifier):
         items = "\n".join(f"[{i + 1}] {t[:1500]}" for i, t in enumerate(batch))
         messages = [
             {"role": "system", "content": _SYSTEM_PROMPT},
-            {"role": "user", "content": _BATCH_TEMPLATE.format(n=len(batch), items=items)},
+            {"role": "user",
+             "content": self._examples_block() + _BATCH_TEMPLATE.format(n=len(batch), items=items)},
         ]
 
         for attempt in range(self.max_retries):
@@ -329,8 +366,27 @@ class GroqLLMClassifier(AnorexiaClassifier):
         self._client = Groq(api_key=api_key)
         return self._client
 
+    def _examples_block(self) -> str:
+        """Bloque de demostraciones etiquetadas para el prompt ('' en zero-shot)."""
+        if not self._examples:
+            return ""
+        lines = [
+            f'Texto: "{text[:300]}" → {"anorexia" if label == 1 else "control"}'
+            for text, label in self._examples
+        ]
+        return "Ejemplos etiquetados:\n" + "\n".join(lines) + "\n\n"
+
     def _cache_key(self, text: str) -> str:
+        # En few-shot la clave incluye un digest de los ejemplos: cambiar los
+        # ejemplos (otra semilla, otro train) invalida sólo SUS entradas. En
+        # zero-shot el formato se mantiene idéntico al histórico para conservar
+        # la caché ya acumulada.
         raw = f"{self.model}\x00{self.prompt_version}\x00{text}"
+        if self._examples:
+            examples_digest = hashlib.sha1(
+                "\x00".join(f"{t}\x01{l}" for t, l in self._examples).encode("utf-8")
+            ).hexdigest()
+            raw = f"{raw}\x00{examples_digest}"
         return hashlib.sha1(raw.encode("utf-8")).hexdigest()
 
     def _load_cache(self) -> dict[str, float]:

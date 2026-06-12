@@ -23,6 +23,11 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 
+# Cargar xgboost ANTES de que cualquier método cargue torch: en macOS, el orden
+# inverso (torch/MPS primero, xgboost después) puede producir un segfault por el
+# choque de runtimes OpenMP. Importarlo aquí fija un orden seguro y determinista.
+import xgboost  # noqa: F401
+
 from src.models.comparison import run_comparison, run_matrix, train_models
 from src.models.registry import REGISTRY
 
